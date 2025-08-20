@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>No Guide Visa Cover Letter Generator</title>
+  <!-- Tailwind CSS via CDN for quick styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Custom styles for spinner */
+    .spinner {
+      border: 4px solid rgba(0,0,0,0.1);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border-left-color: #000;
+      animation: spin 1s ease infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-900">
+  <main class="max-w-4xl mx-auto p-6">
+    <header class="mb-8">
+      <h1 class="text-3xl font-bold mb-1">Visa Application Cover Letter Generator</h1>
+      <p class="text-sm text-gray-600">Powered by No Guide Travel Agent</p>
+    </header>
+    <section id="form-container" class="bg-white shadow-md rounded-xl p-6 space-y-5">
+      <h2 class="text-xl font-semibold">Applicant Information</h2>
+      <form id="visaForm" class="space-y-4">
+        <!-- Name -->
+        <div>
+          <label class="block text-sm font-medium mb-1" for="name">Full Name <span class="text-red-500">*</span></label>
+          <input id="name" type="text" class="w-full border rounded-md p-2" placeholder="John Doe" required />
+        </div>
+        <!-- Age & Nationality -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1" for="age">Age <span class="text-red-500">*</span></label>
+            <input id="age" type="number" min="0" class="w-full border rounded-md p-2" placeholder="29" required />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="nationality">Nationality <span class="text-red-500">*</span></label>
+            <input id="nationality" type="text" class="w-full border rounded-md p-2" placeholder="Nigerian" required />
+          </div>
+        </div>
+        <!-- Address -->
+        <div>
+          <label class="block text-sm font-medium mb-1" for="applicantAddress">Address</label>
+          <input id="applicantAddress" type="text" class="w-full border rounded-md p-2" placeholder="123 Example Street, Lagos" />
+        </div>
+        <!-- Contact Phone & Email -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1" for="contactPhone">Phone</label>
+            <input id="contactPhone" type="text" class="w-full border rounded-md p-2" placeholder="+234 801 234 5678" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="contactEmail">Email</label>
+            <input id="contactEmail" type="email" class="w-full border rounded-md p-2" placeholder="example@email.com" />
+          </div>
+        </div>
+
+        <!-- Additional Personal Details -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1" for="dateOfBirth">Date of Birth</label>
+            <input id="dateOfBirth" type="date" class="w-full border rounded-md p-2" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="passportNumber">Passport Number</label>
+            <input id="passportNumber" type="text" class="w-full border rounded-md p-2" placeholder="A12345678" />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1" for="passportIssueDate">Passport Issue Date</label>
+            <input id="passportIssueDate" type="date" class="w-full border rounded-md p-2" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="passportExpiryDate">Passport Expiry Date</label>
+            <input id="passportExpiryDate" type="date" class="w-full border rounded-md p-2" />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1" for="maritalStatus">Marital Status</label>
+            <select id="maritalStatus" class="w-full border rounded-md p-2">
+              <option value="">Select status</option>
+              <option value="Single">Single</option>
+              <option value="Married">Married</option>
+              <option value="Divorced">Divorced</option>
+              <option value="Widowed">Widowed</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="numDependents">Number of Dependents</label>
+            <input id="numDependents" type="number" min="0" class="w-full border rounded-md p-2" placeholder="0" />
+          </div>
+        </div>
+        <h2 class="text-xl font-semibold pt-4">Travel & Visa Details</h2>
+        <!-- Destination & Visa Type -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1" for="destination">Destination Country <span class="text-red-500">*</span></label>
+            <input id="destination" type="text" class="w-full border rounded-md p-2" placeholder="United Kingdom" required />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="visaType">Visa Type <span class="text-red-500">*</span></label>
+            <select id="visaType" class="w-full border rounded-md p-2" required>
+              <option value="">Select type</option>
+              <option value="Tourist">Tourist</option>
+              <option value="Business">Business</option>
+              <option value="Study">Study</option>
+              <option value="Medical">Medical</option>
+              <option value="Visit">Visit</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+        <!-- Purpose & Travel Dates -->
+        <div>
+          <label class="block text-sm font-medium mb-1" for="purpose">Purpose of Travel <span class="text-red-500">*</span></label>
+          <textarea id="purpose" rows="2" class="w-full border rounded-md p-2" placeholder="Tourism, sightseeing, business meetings, etc." required></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="travelDates">Travel Dates</label>
+          <input id="travelDates" type="text" class="w-full border rounded-md p-2" placeholder="June 5 – June 20, 2026" />
+        </div>
+
+        <!-- Additional Travel & Plans Details -->
+        <div>
+          <label class="block text-sm font-medium mb-1" for="entryDate">Planned Date of Entry into UK</label>
+          <input id="entryDate" type="date" class="w-full border rounded-md p-2" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="stayDuration">Planned Duration of Stay</label>
+          <input id="stayDuration" type="text" class="w-full border rounded-md p-2" placeholder="e.g. 10 days" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="invited">Have you been invited by someone in the UK?</label>
+          <select id="invited" class="w-full border rounded-md p-2">
+            <option value="">Select</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+        </div>
+        <!-- Inviter Details -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1" for="inviterName">Inviter's Name</label>
+            <input id="inviterName" type="text" class="w-full border rounded-md p-2" placeholder="Inviter's full name" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="inviterAddress">Inviter's Address</label>
+            <input id="inviterAddress" type="text" class="w-full border rounded-md p-2" placeholder="Address in UK" />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1" for="inviterRelationship">Inviter's Relationship</label>
+            <input id="inviterRelationship" type="text" class="w-full border rounded-md p-2" placeholder="e.g. friend, sibling" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="inviterDocs">Inviter's Supporting Documents</label>
+            <input id="inviterDocs" type="text" class="w-full border rounded-md p-2" placeholder="Invitation letter, passport, BRP" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="stayDetails">Accommodation or Host Details</label>
+          <textarea id="stayDetails" rows="2" class="w-full border rounded-md p-2" placeholder="Hotel info or host address"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="travelItinerary">Travel Itinerary</label>
+          <textarea id="travelItinerary" rows="2" class="w-full border rounded-md p-2" placeholder="Provide itinerary if available"></textarea>
+        </div>
+        <h2 class="text-xl font-semibold pt-4">Employment & Finances</h2>
+        <!-- Occupation & Income -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1" for="occupation">Occupation / Employer</label>
+            <input id="occupation" type="text" class="w-full border rounded-md p-2" placeholder="Software Developer at XYZ Ltd." />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="income">Monthly Income <span class="text-red-500">*</span></label>
+            <input id="income" type="text" class="w-full border rounded-md p-2" placeholder="₦750,000" required />
+          </div>
+        </div>
+        <!-- Funding Source -->
+        <div>
+          <label class="block text-sm font-medium mb-1" for="funding">Funding Source</label>
+          <select id="funding" class="w-full border rounded-md p-2">
+            <option value="">Self-funded</option>
+            <option value="Employer">Employer</option>
+            <option value="Family">Family</option>
+            <option value="Sponsor">Sponsor</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <!-- Additional Employment & Financial Details -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1" for="employerName">Employer or Business Name</label>
+            <input id="employerName" type="text" class="w-full border rounded-md p-2" placeholder="Company Name" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="employerAddress">Employer/Business Address</label>
+            <input id="employerAddress" type="text" class="w-full border rounded-md p-2" placeholder="Company Address" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="employmentDuration">Length of Employment / Business Operation</label>
+          <input id="employmentDuration" type="text" class="w-full border rounded-md p-2" placeholder="e.g. 3 years" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="otherIncome">Other Income (source & amount)</label>
+          <input id="otherIncome" type="text" class="w-full border rounded-md p-2" placeholder="e.g. Rental income, ₦200,000 per month" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="bankStatementDetails">Personal Bank Statement Details</label>
+          <textarea id="bankStatementDetails" rows="2" class="w-full border rounded-md p-2" placeholder="Bank name, balance trend"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="significantTransactions">Significant Transactions or Lump Sums</label>
+          <textarea id="significantTransactions" rows="2" class="w-full border rounded-md p-2" placeholder="Explain any large or irregular transactions"></textarea>
+        </div>
+        <h2 class="text-xl font-semibold pt-4">Logistics</h2>
+        <!-- Accommodation & Documents -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1" for="accommodation">Accommodation Details</label>
+            <input id="accommodation" type="text" class="w-full border rounded-md p-2" placeholder="Hotel name and reservation reference" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="documents">Supporting Documents</label>
+            <input id="documents" type="text" class="w-full border rounded-md p-2" placeholder="Passport, bank statements, return ticket" />
+          </div>
+        </div>
+        <h2 class="text-xl font-semibold pt-4">Consular Details</h2>
+        <!-- Embassy & Company Details -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1" for="embassyName">Embassy Name</label>
+            <input id="embassyName" type="text" class="w-full border rounded-md p-2" placeholder="High Commission of Canada" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="embassyAddress">Embassy Address</label>
+            <input id="embassyAddress" type="text" class="w-full border rounded-md p-2" placeholder="Embassy address (if known)" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="companyName">Company Name (for branding)</label>
+          <input id="companyName" type="text" class="w-full border rounded-md p-2" value="No Guide Travel Agent" />
+        </div>
+
+        <!-- Ties to Nigeria & Commitments -->
+        <h2 class="text-xl font-semibold pt-4">Ties to Nigeria & Commitments</h2>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="propertyDetails">Property Ownership Details</label>
+          <textarea id="propertyDetails" rows="2" class="w-full border rounded-md p-2" placeholder="Describe any property you own and attach documents"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="businessCommitments">Business / Employment Commitments</label>
+          <textarea id="businessCommitments" rows="2" class="w-full border rounded-md p-2" placeholder="Explain the business or employment you must return to"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="familyDependents">Family / Dependents in Nigeria</label>
+          <textarea id="familyDependents" rows="2" class="w-full border rounded-md p-2" placeholder="Spouse, children, dependents and their details"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="otherCommitments">Other Commitments</label>
+          <textarea id="otherCommitments" rows="2" class="w-full border rounded-md p-2" placeholder="School, contracts, community roles, etc."></textarea>
+        </div>
+
+        <!-- Travel & Visa History -->
+        <h2 class="text-xl font-semibold pt-4">Travel & Visa History</h2>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="travelHistory">Past Travel History</label>
+          <textarea id="travelHistory" rows="2" class="w-full border rounded-md p-2" placeholder="List countries visited and dates"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="visaRefusals">Previous Visa Refusals</label>
+          <textarea id="visaRefusals" rows="2" class="w-full border rounded-md p-2" placeholder="Explain any visa refusals and provide details"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="validVisas">Current Valid Visas</label>
+          <textarea id="validVisas" rows="2" class="w-full border rounded-md p-2" placeholder="List any valid visas held"></textarea>
+        </div>
+
+        <!-- Sponsor Information -->
+        <h2 class="text-xl font-semibold pt-4">Sponsor Information</h2>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="sponsorSelf">Are you self-sponsoring?</label>
+          <select id="sponsorSelf" class="w-full border rounded-md p-2">
+            <option value="">Select</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1" for="sponsorName">Sponsor's Name</label>
+            <input id="sponsorName" type="text" class="w-full border rounded-md p-2" placeholder="Sponsor's full name" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="sponsorRelationship">Sponsor's Relationship</label>
+            <input id="sponsorRelationship" type="text" class="w-full border rounded-md p-2" placeholder="Relationship to applicant" />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1" for="sponsorOccupation">Sponsor's Occupation</label>
+            <input id="sponsorOccupation" type="text" class="w-full border rounded-md p-2" placeholder="Sponsor's occupation" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="sponsorIncome">Sponsor's Income Level</label>
+            <input id="sponsorIncome" type="text" class="w-full border rounded-md p-2" placeholder="Sponsor's income" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="sponsorAccommodation">Will Sponsor Provide Accommodation?</label>
+          <select id="sponsorAccommodation" class="w-full border rounded-md p-2">
+            <option value="">Select</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="sponsorDocs">Sponsor's Documents</label>
+          <textarea id="sponsorDocs" rows="2" class="w-full border rounded-md p-2" placeholder="Bank statements, payslips, invitation letter, etc."></textarea>
+        </div>
+
+        <!-- Additional Information -->
+        <h2 class="text-xl font-semibold pt-4">Additional Information</h2>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="specialEvents">Special Events / Trip Highlights</label>
+          <textarea id="specialEvents" rows="2" class="w-full border rounded-md p-2" placeholder="Weddings, conferences, medical procedures, tourism highlights"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="compellingReasons">Compelling Personal Reasons</label>
+          <textarea id="compellingReasons" rows="2" class="w-full border rounded-md p-2" placeholder="Why visit now?"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="supportingLetters">Supporting Letters/Documents</label>
+          <textarea id="supportingLetters" rows="2" class="w-full border rounded-md p-2" placeholder="Any letters or documents prepared"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="potentialWeaknesses">Potential Weaknesses to Explain</label>
+          <textarea id="potentialWeaknesses" rows="2" class="w-full border rounded-md p-2" placeholder="e.g. low balance, new account, gaps in employment"></textarea>
+        </div>
+        <!-- Submit button & status messages -->
+        <div class="pt-4 flex items-center gap-4">
+          <button id="generateBtn" type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50 disabled:pointer-events-none">Generate Letter</button>
+          <div id="spinner" class="spinner hidden"></div>
+          <p id="statusMsg" class="text-sm text-gray-600"></p>
+        </div>
+      </form>
+    </section>
+
+    <section id="output-section" class="mt-8 hidden">
+      <h2 class="text-xl font-semibold mb-2">Generated Letter</h2>
+      <textarea id="output" class="w-full h-64 border rounded-md p-3 bg-gray-100" readonly></textarea>
+      <div class="mt-3 flex flex-wrap gap-3">
+        <button id="copyBtn" class="px-3 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Copy to Clipboard</button>
+        <button id="downloadBtn" class="px-3 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Download as DOC</button>
+        <button id="printBtn" class="px-3 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Print Letter</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById('visaForm');
+    const spinner = document.getElementById('spinner');
+    const statusMsg = document.getElementById('statusMsg');
+    const generateBtn = document.getElementById('generateBtn');
+    const outputSection = document.getElementById('output-section');
+    const output = document.getElementById('output');
+    const copyBtn = document.getElementById('copyBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const printBtn = document.getElementById('printBtn');
+
+    // Helper to gather form values into an object
+    function getFormData() {
+      return {
+        // Personal details
+        name: document.getElementById('name').value.trim(),
+        age: document.getElementById('age').value.trim(),
+        nationality: document.getElementById('nationality').value.trim(),
+        applicantAddress: document.getElementById('applicantAddress').value.trim(),
+        contactPhone: document.getElementById('contactPhone').value.trim(),
+        contactEmail: document.getElementById('contactEmail').value.trim(),
+        dateOfBirth: document.getElementById('dateOfBirth').value.trim(),
+        passportNumber: document.getElementById('passportNumber').value.trim(),
+        passportIssueDate: document.getElementById('passportIssueDate').value.trim(),
+        passportExpiryDate: document.getElementById('passportExpiryDate').value.trim(),
+        maritalStatus: document.getElementById('maritalStatus').value,
+        numDependents: document.getElementById('numDependents').value.trim(),
+        // Travel & plans
+        destination: document.getElementById('destination').value.trim(),
+        visaType: document.getElementById('visaType').value,
+        purpose: document.getElementById('purpose').value.trim(),
+        travelDates: document.getElementById('travelDates').value.trim(),
+        entryDate: document.getElementById('entryDate').value.trim(),
+        stayDuration: document.getElementById('stayDuration').value.trim(),
+        invited: document.getElementById('invited').value,
+        inviterName: document.getElementById('inviterName').value.trim(),
+        inviterAddress: document.getElementById('inviterAddress').value.trim(),
+        inviterRelationship: document.getElementById('inviterRelationship').value.trim(),
+        inviterDocs: document.getElementById('inviterDocs').value.trim(),
+        stayDetails: document.getElementById('stayDetails').value.trim(),
+        travelItinerary: document.getElementById('travelItinerary').value.trim(),
+        // Employment & finances
+        occupation: document.getElementById('occupation').value.trim(),
+        employerName: document.getElementById('employerName').value.trim(),
+        employerAddress: document.getElementById('employerAddress').value.trim(),
+        employmentDuration: document.getElementById('employmentDuration').value.trim(),
+        income: document.getElementById('income').value.trim(),
+        otherIncome: document.getElementById('otherIncome').value.trim(),
+        funding: document.getElementById('funding').value,
+        bankStatementDetails: document.getElementById('bankStatementDetails').value.trim(),
+        significantTransactions: document.getElementById('significantTransactions').value.trim(),
+        // Logistics (existing)
+        accommodation: document.getElementById('accommodation').value.trim(),
+        documents: document.getElementById('documents').value.trim(),
+        // Consular details
+        embassyName: document.getElementById('embassyName').value.trim(),
+        embassyAddress: document.getElementById('embassyAddress').value.trim(),
+        companyName: document.getElementById('companyName').value.trim(),
+        // Ties & commitments
+        propertyDetails: document.getElementById('propertyDetails').value.trim(),
+        businessCommitments: document.getElementById('businessCommitments').value.trim(),
+        familyDependents: document.getElementById('familyDependents').value.trim(),
+        otherCommitments: document.getElementById('otherCommitments').value.trim(),
+        // Travel & visa history
+        travelHistory: document.getElementById('travelHistory').value.trim(),
+        visaRefusals: document.getElementById('visaRefusals').value.trim(),
+        validVisas: document.getElementById('validVisas').value.trim(),
+        // Sponsor information
+        sponsorSelf: document.getElementById('sponsorSelf').value,
+        sponsorName: document.getElementById('sponsorName').value.trim(),
+        sponsorRelationship: document.getElementById('sponsorRelationship').value.trim(),
+        sponsorOccupation: document.getElementById('sponsorOccupation').value.trim(),
+        sponsorIncome: document.getElementById('sponsorIncome').value.trim(),
+        sponsorAccommodation: document.getElementById('sponsorAccommodation').value,
+        sponsorDocs: document.getElementById('sponsorDocs').value.trim(),
+        // Additional information
+        specialEvents: document.getElementById('specialEvents').value.trim(),
+        compellingReasons: document.getElementById('compellingReasons').value.trim(),
+        supportingLetters: document.getElementById('supportingLetters').value.trim(),
+        potentialWeaknesses: document.getElementById('potentialWeaknesses').value.trim(),
+      };
+    }
+
+    // Validate required fields; returns an array of missing field names
+    function validateForm(data) {
+      const missing = [];
+      if (!data.name) missing.push('Name');
+      if (!data.age) missing.push('Age');
+      if (!data.nationality) missing.push('Nationality');
+      if (!data.destination) missing.push('Destination Country');
+      if (!data.visaType) missing.push('Visa Type');
+      if (!data.purpose) missing.push('Purpose of Travel');
+      if (!data.income) missing.push('Monthly Income');
+      return missing;
+    }
+
+    async function generateLetter(payload) {
+      const response = await fetch('http://localhost:5000/generate-letter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || 'Unexpected server error');
+      }
+      const data = await response.json();
+      return data.letter;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = getFormData();
+      // Validate required fields
+      const missing = validateForm(data);
+      if (missing.length) {
+        statusMsg.textContent = `Missing required fields: ${missing.join(', ')}`;
+        statusMsg.classList.add('text-red-600');
+        return;
+      }
+      statusMsg.textContent = '';
+      spinner.classList.remove('hidden');
+      generateBtn.disabled = true;
+      try {
+        const letter = await generateLetter(data);
+        output.value = letter;
+        outputSection.classList.remove('hidden');
+        statusMsg.textContent = 'Letter generated successfully';
+        statusMsg.classList.remove('text-red-600');
+        statusMsg.classList.add('text-green-600');
+      } catch (err) {
+        console.error(err);
+        statusMsg.textContent = err.message || 'Failed to generate letter';
+        statusMsg.classList.add('text-red-600');
+      } finally {
+        spinner.classList.add('hidden');
+        generateBtn.disabled = false;
+      }
+    });
+
+    // Copy to clipboard
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(output.value);
+        alert('Letter copied to clipboard');
+      } catch {
+        alert('Could not copy');
+      }
+    });
+
+    // Download as .doc (basic plain text .doc file)
+    downloadBtn.addEventListener('click', () => {
+      const blob = new Blob([output.value], { type: 'application/msword' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'visa_cover_letter.doc';
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(url);
+      a.remove();
+    });
+
+    // Print the letter
+    printBtn.addEventListener('click', () => {
+      const win = window.open('', '_blank');
+      if (!win) return;
+      win.document.write(`<!doctype html><html><head><title>Visa Cover Letter</title></head><body style="white-space: pre-wrap; font-family: serif; margin: 40px;">${
+        output.value.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      }</body></html>`);
+      win.document.close();
+      win.focus();
+      win.print();
+    });
+  </script>
+</body>
+</html>
