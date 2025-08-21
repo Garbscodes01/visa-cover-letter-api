@@ -470,7 +470,7 @@
     }
 
     async function generateLetter(payload) {
-      const response = await fetch('http://localhost:5000/generate-letter', {
+      const response = await fetch('https://visa-cover-letter-api.onrender.com/generate-letter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
