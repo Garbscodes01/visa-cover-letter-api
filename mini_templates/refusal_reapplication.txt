@@ -1,3 +1,10 @@
+"My previous application, submitted on [date], was refused because [state reasons briefly]. I have addressed each point in this application:
+
+- [Reason 1 → Rebuttal]
+- [Reason 2 → Rebuttal]
+
+I have also attached additional evidence, including [bank statements/employment letters/invoices], to clarify any previous gaps."
+
 When handling a reapplication after refusal:
 - Begin with acknowledgment of previous refusal.
 - Briefly state the refusal reason.
