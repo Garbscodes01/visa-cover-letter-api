@@ -1,0 +1,13 @@
+STRUCTURE:
+1. Applicant contact block (address, phone, email) + current date
+2. Embassy/Consulate block (name + address)
+3. Subject line: "Application for [Visa Type] to [Destination]"
+4. Salutation ("Dear Sir/Madam," or embassy-specific)
+5. Body paragraphs:
+   - Identity & purpose of travel
+   - Employment / business & finances
+   - Funding and accommodation details
+   - Supporting documents listed
+   - Strong ties & assurance of return
+   - If reapplying: refusal rebuttal paragraph
+6. Closing: "Sincerely," + full name
