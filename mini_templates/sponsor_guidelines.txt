@@ -1,3 +1,6 @@
+"This trip is fully sponsored by my [father/mother/brother/etc.], Mr./Mrs. [Sponsor Name], who earns ₦[amount] monthly as a [job title] with [company name]. I have enclosed their sponsorship letter, employment confirmation, and bank statements showing their ability to fund my £[amount] trip cost."
+
+
 When applicant is sponsored:
 - Clearly identify sponsor’s full name and relationship.
 - Mention sponsor’s occupation and income.
