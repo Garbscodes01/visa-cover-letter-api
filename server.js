@@ -1,9 +1,8 @@
 /**
- * Visa Letter API — Render-ready (SOP-aware)
- * - CORS allow-list for your Static Site (via FRONTEND_ORIGIN)
- * - Reads SOP rules, mini-templates, and sample letters from /rules, /mini_templates, /samples
+ * Visa Letter API — SOP-aware
+ * - Reads SOP rules, mini-templates, and samples from /rules, /mini_templates, /samples
  * - Works with gpt-5-mini (no temperature/max_tokens); graceful fallback
- * - Clear errors for debugging
+ * - Same request/response shape as before (frontend unchanged)
  */
 
 const fs = require('fs');
@@ -62,7 +61,6 @@ if (FRONTEND_ORIGIN) {
   );
   app.options('*', cors());
 } else {
-  // Permissive for local/dev; lock down later by setting FRONTEND_ORIGIN
   app.use(cors());
   app.options('*', cors());
 }
@@ -76,12 +74,10 @@ const openai = new OpenAI({
   project: process.env.OPENAI_PROJECT_ID || process.env.OPENAI_PROJECT || undefined,
 });
 
-// ------------------------ SOP Assets: Rules, Minis, Samples ------------------------
+// ------------------------ SOP Assets ------------------------
 const RULES_DIR = path.join(__dirname, 'rules');
 const MINIS_DIR = path.join(__dirname, 'mini_templates');
 const SAMPLES_DIR = path.join(__dirname, 'samples');
-
-// Create folders if missing (safe no-ops if they exist)
 for (const d of [RULES_DIR, MINIS_DIR, SAMPLES_DIR]) {
   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
 }
@@ -106,7 +102,7 @@ function clip(text = '', max = 4000) {
   return s.length <= max ? s.trim() : (s.slice(0, max).trim() + '\n…');
 }
 
-// Build a compact "style digest" from samples to keep tokens low
+// Build compact "style digest" from samples to keep tokens low
 function buildStyleDigest({ maxFiles = 8, perFileChars = 800, totalChars = 4000 } = {}) {
   const files = readAllTxt(SAMPLES_DIR).slice(0, maxFiles);
   let out = '';
@@ -126,21 +122,40 @@ function clean(v) {
   return s.length ? s : undefined;
 }
 
-// 👇 REWORKED: buildMessages now injects RULES + SAMPLES + SCENARIOS
+// ---------- Prompt Builder (SOP-aware) ----------
 function buildMessages(details) {
-  // Pull SOP assets (optional; safe if missing)
-  const masterRules = clip(readFirstExisting(RULES_DIR, ['master_rules.txt']), 3000);
-  const structureGuide = clip(readFirstExisting(RULES_DIR, ['structure_guide.txt']), 1800);
-  const qualityChecklist = clip(readFirstExisting(RULES_DIR, ['quality_checklist.txt']), 1200);
-  const decisionTree = clip(readFirstExisting(RULES_DIR, ['decision_tree.txt']), 1800);
+  // Pull SOP assets (safe if some are missing)
+  const masterRules = clip(readFirstExisting(RULES_DIR, [
+    'master_rules.txt'
+  ]), 3000);
 
-  const miniRefusal = clip(readFirstExisting(MINIS_DIR, ['refusal_reapplication.txt']), 1200);
-  const miniSponsor = clip(readFirstExisting(MINIS_DIR, ['sponsor_guidelines.txt']), 1200);
-  const miniSelfEmp = clip(readFirstExisting(MINIS_DIR, ['self_employed.txt']), 1200);
+  const structureGuide = clip(readFirstExisting(RULES_DIR, [
+    'structure_guide.txt'
+  ]), 1800);
+
+  const qualityChecklist = clip(readFirstExisting(RULES_DIR, [
+    'quality_checklist.txt'
+  ]), 1200);
+
+  // support both spellings for your file
+  const masterTemplate = clip(readFirstExisting(RULES_DIR, [
+    'master_template.txt',
+    'master_templete.txt'
+  ]), 2500);
+
+  // mini-templates/snippets
+  const mini = {
+    refusal: clip(readFirstExisting(MINIS_DIR, ['refusal_reapplication.txt']), 1200),
+    sponsor: clip(readFirstExisting(MINIS_DIR, ['sponsor_guidelines.txt']), 1200),
+    selfEmp: clip(readFirstExisting(MINIS_DIR, ['self_employed.txt']), 1200),
+    medical: clip(readFirstExisting(MINIS_DIR, ['medical_visit.txt']), 900),
+    business: clip(readFirstExisting(MINIS_DIR, ['business_conference.txt']), 900),
+    touristFirst: clip(readFirstExisting(MINIS_DIR, ['tourist_first_time.txt']), 900),
+  };
 
   const styleDigest = buildStyleDigest();
 
-  // Infer scenario and context from the already-built detail lines
+  // Infer scenario from detail lines
   const joined = details.join('\n');
 
   const getField = (label) => {
@@ -154,43 +169,67 @@ function buildMessages(details) {
   const refusalPresent =
     /(^|\n)\s*Visa Refusals:/i.test(joined) ||
     /(^|\n)\s*Previous Visa Refusals/i.test(joined) ||
-    /Refusal/i.test(joined);
+    /\brefusal(s)?\b/i.test(joined);
 
   const sponsored =
     /(^|\n)\s*Self-sponsored:\s*No/i.test(joined) ||
-    /(^|\n)\s*Sponsor Name:/i.test(joined);
+    /(^|\n)\s*Sponsor Name:/i.test(joined) ||
+    /(^|\n)\s*Spons(or|orship)/i.test(joined);
 
   const selfEmployed =
-    /(^|\n)\s*Occupation:\s*(owner|self|founder|ceo)/i.test(joined);
+    /(^|\n)\s*Occupation:\s*(owner|self|founder|ceo|proprietor)/i.test(joined);
 
   const businessPurpose =
-    /(^|\n)\s*Purpose of Travel:\s*.*(business|conference)/i.test(joined);
+    /(^|\n)\s*Purpose of Travel:\s*.*(business|conference|training)/i.test(joined);
 
-  const medicalPurpose = /(^|\n).*(Medical:|medical)/i.test(joined);
+  const medicalPurpose =
+    /(^|\n).*(Medical:|medical)/i.test(joined) ||
+    /(^|\n)\s*Purpose of Travel:\s*.*medical/i.test(joined);
 
-  const strongTies =
+  const hasTravelHistory = /(^|\n)\s*Travel History:\s*\S+/i.test(joined);
+  const touristFirstTime = !hasTravelHistory && /(^|\n)\s*Purpose of Travel:\s*.*(tourism|holiday|visit)/i.test(joined);
+
+  const hasTies =
     /Property Details:|Family\/Dependents:|Business\/Employment Commitments:/i.test(joined);
 
   const hasWeaknesses =
-    /(^|\n)\s*Potential Weaknesses:/i.test(joined);
+    /(^|\n)\s*Potential Weaknesses:\s*\S+/i.test(joined);
 
-  // Tone hint: a touch warmer when sensitive
-  const toneHint = hasWeaknesses || medicalPurpose ? 'Warm, empathetic but professional.' : 'Formal, respectful, confident.';
+  const toneHint = (hasWeaknesses || medicalPurpose)
+    ? 'Warm, empathetic but professional.'
+    : 'Formal, respectful, confident.';
 
-  // Scenario hints to steer the model per SOP
+  // Scenario hints + blocks
   const scenarioHints = [];
-  if (refusalPresent) scenarioHints.push('Reapplication after refusal: include a brief rebuttal addressing the exact refusal points (no excuses, just clear corrections and evidence).');
-  if (sponsored) scenarioHints.push('Sponsored: clearly state sponsor identity, relationship, income, accommodation, and list sponsor documents referenced.');
-  if (selfEmployed) scenarioHints.push('Self-employed: reference business registration (CAC), tax returns, and invoices if provided.');
-  if (businessPurpose) scenarioHints.push('Business/Conference: include event name, dates, invitation and funding responsibility.');
-  if (medicalPurpose) scenarioHints.push('Medical: include hospital/appointment details, timeline, and who covers costs.');
-  if (strongTies) scenarioHints.push('Emphasize strong ties to Nigeria (family, employment/business, property, commitments) and clear intention to return.');
+  const blocks = [];
 
-  // Assemble optional scenario mini-templates
-  const scenarioBlocks = [];
-  if (refusalPresent && miniRefusal) scenarioBlocks.push('--- MINI TEMPLATE (Reapplication) ---\n' + miniRefusal);
-  if (sponsored && miniSponsor) scenarioBlocks.push('--- MINI TEMPLATE (Sponsored) ---\n' + miniSponsor);
-  if (selfEmployed && miniSelfEmp) scenarioBlocks.push('--- MINI TEMPLATE (Self-employed) ---\n' + miniSelfEmp);
+  if (refusalPresent) {
+    scenarioHints.push('Reapplication after refusal: include short, factual rebuttal to each point and show new evidence.');
+    if (mini.refusal) blocks.push('--- MINI (Reapplication) ---\n' + mini.refusal);
+  }
+  if (sponsored) {
+    scenarioHints.push('Sponsored: clearly state sponsor identity, relationship, income, accommodation, and list sponsor documents.');
+    if (mini.sponsor) blocks.push('--- MINI (Sponsored) ---\n' + mini.sponsor);
+  }
+  if (selfEmployed) {
+    scenarioHints.push('Self-employed: reference CAC/registration, tax returns, and invoices if provided.');
+    if (mini.selfEmp) blocks.push('--- MINI (Self-employed) ---\n' + mini.selfEmp);
+  }
+  if (businessPurpose) {
+    scenarioHints.push('Business/Conference: include event name, dates, invitation, and who covers costs.');
+    if (mini.business) blocks.push('--- MINI (Business/Conference) ---\n' + mini.business);
+  }
+  if (medicalPurpose) {
+    scenarioHints.push('Medical: include hospital/appointment details, timeline, and funding source.');
+    if (mini.medical) blocks.push('--- MINI (Medical) ---\n' + mini.medical);
+  }
+  if (touristFirstTime) {
+    scenarioHints.push('Tourist, first-time traveler: reassure ties and capability; keep tone welcoming but formal.');
+    if (mini.touristFirst) blocks.push('--- MINI (Tourist First-time) ---\n' + mini.touristFirst);
+  }
+  if (hasTies) {
+    scenarioHints.push('Emphasize strong ties to Nigeria (family, employment/business, property, commitments).');
+  }
 
   const systemMessage = {
     role: 'system',
@@ -217,18 +256,19 @@ function buildMessages(details) {
    - Strong ties & return assurance
 6) Closing: "Sincerely," + full name
 
---- RULES (SOP, clipped) ---
+--- RULES (clipped) ---
 ${masterRules || '(no extra rules provided)'}
 
 ${structureGuide ? '\n--- STRUCTURE GUIDE (clipped) ---\n' + structureGuide : ''}
 ${qualityChecklist ? '\n--- QUALITY CHECKLIST (clipped) ---\n' + qualityChecklist : ''}
-${decisionTree ? '\n--- DECISION TREE (clipped) ---\n' + decisionTree : ''}
 
---- STYLE DIGEST (excerpts from samples, clipped) ---
+${masterTemplate ? '\n--- MASTER TEMPLATE (clipped, as reference — adapt, do not copy verbatim) ---\n' + masterTemplate : ''}
+
+--- STYLE DIGEST (sample excerpts) ---
 ${styleDigest || '(no samples found)'}
-${scenarioBlocks.length ? '\n\n' + scenarioBlocks.join('\n\n') : ''}
+${blocks.length ? '\n\n' + blocks.join('\n\n') : ''}
 
---- SCENARIO HINTS (derived from intake) ---
+--- SCENARIO HINTS ---
 ${scenarioHints.length ? '- ' + scenarioHints.join('\n- ') : '(none)'}
 `
   };
@@ -246,17 +286,15 @@ Return one cohesive plain-text cover letter.`
   return [systemMessage, guide, userInstruction];
 }
 
-// Use gpt-5-mini safely (no temperature/max_tokens); fallback once if needed
+// ------------------------ Model call ------------------------
 async function createLetter(messages) {
   const isGPT5Mini = /^gpt-5-mini/.test(MODEL_NAME);
-
   try {
     if (isGPT5Mini) {
       const resp = await openai.chat.completions.create({
         model: MODEL_NAME,
         messages,
-        // For length limiting with gpt-5-mini, you can optionally set:
-        // max_completion_tokens: 900,
+        // max_completion_tokens: 900, // optional cap
       });
       return resp.choices?.[0]?.message?.content?.trim();
     } else {
