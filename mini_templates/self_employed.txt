@@ -1,3 +1,6 @@
+"I own and operate [business name], registered with the Corporate Affairs Commission (CAC number: [number]), earning an average monthly income of ₦[amount]. I have attached tax receipts and recent invoices from clients to verify this income."
+
+
 For self-employed applicants:
 - Mention business name and registration (CAC if Nigerian).
 - Include length of operation.
