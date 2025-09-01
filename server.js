@@ -1,6 +1,7 @@
 /**
- * Visa Letter API — Render-ready
+ * Visa Letter API — Render-ready (SOP-aware)
  * - CORS allow-list for your Static Site (via FRONTEND_ORIGIN)
+ * - Reads SOP rules, mini-templates, and sample letters from /rules, /mini_templates, /samples
  * - Works with gpt-5-mini (no temperature/max_tokens); graceful fallback
  * - Clear errors for debugging
  */
@@ -75,6 +76,49 @@ const openai = new OpenAI({
   project: process.env.OPENAI_PROJECT_ID || process.env.OPENAI_PROJECT || undefined,
 });
 
+// ------------------------ SOP Assets: Rules, Minis, Samples ------------------------
+const RULES_DIR = path.join(__dirname, 'rules');
+const MINIS_DIR = path.join(__dirname, 'mini_templates');
+const SAMPLES_DIR = path.join(__dirname, 'samples');
+
+// Create folders if missing (safe no-ops if they exist)
+for (const d of [RULES_DIR, MINIS_DIR, SAMPLES_DIR]) {
+  if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+}
+
+function readAllTxt(dir) {
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir)
+    .filter((f) => /\.(txt|md)$/i.test(f))
+    .map((name) => ({ name, text: fs.readFileSync(path.join(dir, name), 'utf8') }));
+}
+
+function readFirstExisting(dir, names = []) {
+  for (const n of names) {
+    const p = path.join(dir, n);
+    if (fs.existsSync(p)) return fs.readFileSync(p, 'utf8');
+  }
+  return '';
+}
+
+function clip(text = '', max = 4000) {
+  const s = String(text || '');
+  return s.length <= max ? s.trim() : (s.slice(0, max).trim() + '\n…');
+}
+
+// Build a compact "style digest" from samples to keep tokens low
+function buildStyleDigest({ maxFiles = 8, perFileChars = 800, totalChars = 4000 } = {}) {
+  const files = readAllTxt(SAMPLES_DIR).slice(0, maxFiles);
+  let out = '';
+  for (let i = 0; i < files.length; i++) {
+    const chunk = clip(files[i].text, perFileChars);
+    const next = `\n\n### Sample ${i + 1}: ${files[i].name}\n${chunk}`;
+    if ((out + next).length > totalChars) break;
+    out += next;
+  }
+  return out.trim();
+}
+
 // ------------------------ Utilities ------------------------
 function clean(v) {
   if (v === undefined || v === null) return undefined;
@@ -82,32 +126,124 @@ function clean(v) {
   return s.length ? s : undefined;
 }
 
+// 👇 REWORKED: buildMessages now injects RULES + SAMPLES + SCENARIOS
 function buildMessages(details) {
+  // Pull SOP assets (optional; safe if missing)
+  const masterRules = clip(readFirstExisting(RULES_DIR, ['master_rules.txt']), 3000);
+  const structureGuide = clip(readFirstExisting(RULES_DIR, ['structure_guide.txt']), 1800);
+  const qualityChecklist = clip(readFirstExisting(RULES_DIR, ['quality_checklist.txt']), 1200);
+  const decisionTree = clip(readFirstExisting(RULES_DIR, ['decision_tree.txt']), 1800);
+
+  const miniRefusal = clip(readFirstExisting(MINIS_DIR, ['refusal_reapplication.txt']), 1200);
+  const miniSponsor = clip(readFirstExisting(MINIS_DIR, ['sponsor_guidelines.txt']), 1200);
+  const miniSelfEmp = clip(readFirstExisting(MINIS_DIR, ['self_employed.txt']), 1200);
+
+  const styleDigest = buildStyleDigest();
+
+  // Infer scenario and context from the already-built detail lines
+  const joined = details.join('\n');
+
+  const getField = (label) => {
+    const m = new RegExp('^' + label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*:\\s*(.+)$', 'mi').exec(joined);
+    return m ? m[1].trim() : undefined;
+  };
+
+  const destination = getField('Destination') || getField('Destination Country') || '[Destination]';
+  const visaType = getField('Visa Type') || 'Visitor';
+
+  const refusalPresent =
+    /(^|\n)\s*Visa Refusals:/i.test(joined) ||
+    /(^|\n)\s*Previous Visa Refusals/i.test(joined) ||
+    /Refusal/i.test(joined);
+
+  const sponsored =
+    /(^|\n)\s*Self-sponsored:\s*No/i.test(joined) ||
+    /(^|\n)\s*Sponsor Name:/i.test(joined);
+
+  const selfEmployed =
+    /(^|\n)\s*Occupation:\s*(owner|self|founder|ceo)/i.test(joined);
+
+  const businessPurpose =
+    /(^|\n)\s*Purpose of Travel:\s*.*(business|conference)/i.test(joined);
+
+  const medicalPurpose = /(^|\n).*(Medical:|medical)/i.test(joined);
+
+  const strongTies =
+    /Property Details:|Family\/Dependents:|Business\/Employment Commitments:/i.test(joined);
+
+  const hasWeaknesses =
+    /(^|\n)\s*Potential Weaknesses:/i.test(joined);
+
+  // Tone hint: a touch warmer when sensitive
+  const toneHint = hasWeaknesses || medicalPurpose ? 'Warm, empathetic but professional.' : 'Formal, respectful, confident.';
+
+  // Scenario hints to steer the model per SOP
+  const scenarioHints = [];
+  if (refusalPresent) scenarioHints.push('Reapplication after refusal: include a brief rebuttal addressing the exact refusal points (no excuses, just clear corrections and evidence).');
+  if (sponsored) scenarioHints.push('Sponsored: clearly state sponsor identity, relationship, income, accommodation, and list sponsor documents referenced.');
+  if (selfEmployed) scenarioHints.push('Self-employed: reference business registration (CAC), tax returns, and invoices if provided.');
+  if (businessPurpose) scenarioHints.push('Business/Conference: include event name, dates, invitation and funding responsibility.');
+  if (medicalPurpose) scenarioHints.push('Medical: include hospital/appointment details, timeline, and who covers costs.');
+  if (strongTies) scenarioHints.push('Emphasize strong ties to Nigeria (family, employment/business, property, commitments) and clear intention to return.');
+
+  // Assemble optional scenario mini-templates
+  const scenarioBlocks = [];
+  if (refusalPresent && miniRefusal) scenarioBlocks.push('--- MINI TEMPLATE (Reapplication) ---\n' + miniRefusal);
+  if (sponsored && miniSponsor) scenarioBlocks.push('--- MINI TEMPLATE (Sponsored) ---\n' + miniSponsor);
+  if (selfEmployed && miniSelfEmp) scenarioBlocks.push('--- MINI TEMPLATE (Self-employed) ---\n' + miniSelfEmp);
+
   const systemMessage = {
     role: 'system',
     content:
-      'You are an expert consular assistant. You write professional, embassy-acceptable visa cover letters. Use a formal tone, short clear paragraphs, and never invent facts.',
+      'You are an expert consular assistant. Write embassy-acceptable visa cover letters. Use a ' +
+      toneHint +
+      ' Keep paragraphs short and clear. Never invent facts. Synthesize STYLE from samples without copying lines.'
   };
 
-  const formatGuide = {
+  const guide = {
     role: 'user',
-    content: `Structure:
+    content:
+`STRUCTURE (Plain text only):
 1) Applicant contact (if provided) + current date
 2) Embassy block (if provided)
-3) Subject: "Application for [Visa Type] to [Destination]"
+3) Subject: "Application for ${visaType} Visa to ${destination}"
 4) Salutation
-5) Body: identity & travel dates; employment/income; funding & accommodation; supporting documents; strong ties & return assurance
+5) Body:
+   - Identity & travel dates
+   - Employment/Business & income
+   - Funding & accommodation
+   - Refusal rebuttal (if any)
+   - Supporting documents referenced
+   - Strong ties & return assurance
 6) Closing: "Sincerely," + full name
-Plain text only.`,
+
+--- RULES (SOP, clipped) ---
+${masterRules || '(no extra rules provided)'}
+
+${structureGuide ? '\n--- STRUCTURE GUIDE (clipped) ---\n' + structureGuide : ''}
+${qualityChecklist ? '\n--- QUALITY CHECKLIST (clipped) ---\n' + qualityChecklist : ''}
+${decisionTree ? '\n--- DECISION TREE (clipped) ---\n' + decisionTree : ''}
+
+--- STYLE DIGEST (excerpts from samples, clipped) ---
+${styleDigest || '(no samples found)'}
+${scenarioBlocks.length ? '\n\n' + scenarioBlocks.join('\n\n') : ''}
+
+--- SCENARIO HINTS (derived from intake) ---
+${scenarioHints.length ? '- ' + scenarioHints.join('\n- ') : '(none)'}
+`
   };
 
   const userInstruction = {
     role: 'user',
-    content: `Use these details to draft the cover letter (omit fields not provided):
-${details.map((l) => '- ' + l).join('\n')}`,
+    content: `Use ONLY these facts (omit fields not provided). Do not hallucinate.
+
+${details.map((l) => '- ' + l).join('\n')}
+
+OUTPUT:
+Return one cohesive plain-text cover letter.`
   };
 
-  return [systemMessage, formatGuide, userInstruction];
+  return [systemMessage, guide, userInstruction];
 }
 
 // Use gpt-5-mini safely (no temperature/max_tokens); fallback once if needed
@@ -119,8 +255,8 @@ async function createLetter(messages) {
       const resp = await openai.chat.completions.create({
         model: MODEL_NAME,
         messages,
-        // For length limiting with gpt-5-mini, use max_completion_tokens (optional):
-        // max_completion_tokens: 800,
+        // For length limiting with gpt-5-mini, you can optionally set:
+        // max_completion_tokens: 900,
       });
       return resp.choices?.[0]?.message?.content?.trim();
     } else {
