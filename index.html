@@ -9,6 +9,7 @@
     .spinner{border:4px solid rgba(0,0,0,0.1);width:36px;height:36px;border-radius:50%;border-left-color:#000;animation:spin 1s ease infinite}
     @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
     .hint{font-size:.8rem}
+    .hidden{display:none}
   </style>
 </head>
 <body class="bg-gray-50 font-sans text-gray-900">
@@ -20,7 +21,7 @@
 
     <section id="form-container" class="bg-white shadow-md rounded-xl p-6 space-y-6">
       <form id="visaForm" class="space-y-6">
-        <!-- Decision flags (SOP) -->
+        <!-- High-level flags -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label class="block text-sm font-semibold mb-1" for="applicationType">Application Type <span class="text-red-500">*</span></label>
@@ -29,29 +30,29 @@
               <option value="First-time">First-time</option>
               <option value="Reapplication">Reapplication (after refusal)</option>
             </select>
-            <p class="hint text-gray-500 mt-1">If reapplying, you’ll explain refusal reasons.</p>
+            <p class="hint text-gray-500 mt-1">If reapplying, refusal reasons will be required.</p>
           </div>
           <div>
             <label class="block text-sm font-semibold mb-1" for="employmentStatus">Employment Status <span class="text-red-500">*</span></label>
             <select id="employmentStatus" class="w-full border rounded-md p-2" required>
               <option value="">Select</option>
-              <option value="Employed">Employed</option>
-              <option value="Self-employed">Self-employed</option>
-              <option value="Unemployed">Unemployed</option>
-              <option value="Student">Student</option>
+              <option>Employed</option>
+              <option>Self-employed</option>
+              <option>Unemployed</option>
+              <option>Student</option>
             </select>
           </div>
           <div>
             <label class="block text-sm font-semibold mb-1" for="isSponsored">Sponsored? <span class="text-red-500">*</span></label>
             <select id="isSponsored" class="w-full border rounded-md p-2" required>
               <option value="">Select</option>
-              <option value="No">No (self-funded)</option>
-              <option value="Yes">Yes (family/company)</option>
+              <option>No">No (self-funded)</option>
+              <option>Yes">Yes (family/company)</option>
             </select>
           </div>
         </div>
 
-        <!-- Applicant Information -->
+        <!-- Applicant -->
         <div>
           <h2 class="text-xl font-semibold">Applicant Information</h2>
           <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -111,7 +112,7 @@
           </div>
         </div>
 
-        <!-- Travel & Visa Details -->
+        <!-- Travel & Visa -->
         <div>
           <h2 class="text-xl font-semibold">Travel & Visa Details</h2>
           <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -123,9 +124,14 @@
               <label class="block text-sm font-medium mb-1" for="visaType">Visa Type <span class="text-red-500">*</span></label>
               <select id="visaType" class="w-full border rounded-md p-2" required>
                 <option value="">Select</option>
-                <option>Tourist</option><option>Business</option><option>Study</option>
-                <option>Medical</option><option>Visit</option><option>Other</option>
+                <option>Tourist</option>
+                <option>Business</option>
+                <option>Study</option>
+                <option>Medical</option>
+                <option>Visit</option>
+                <option>Other</option>
               </select>
+              <input id="visaTypeOther" type="text" class="w-full border rounded-md p-2 mt-2 hidden" placeholder="Explain other visa type…" />
             </div>
             <div class="md:col-span-2">
               <label class="block text-sm font-medium mb-1" for="purpose">Purpose of Travel <span class="text-red-500">*</span></label>
@@ -133,7 +139,7 @@
             </div>
             <div>
               <label class="block text-sm font-medium mb-1" for="travelDates">Travel Dates</label>
-              <input id="travelDates" type="text" class="w-full border rounded-md p-2" placeholder="10 Oct – 20 Oct 2025" />
+              <input id="travelDates" type="text" class="w-full border rounded-md p-2" placeholder="10 Sep – 10 Dec 2025" />
             </div>
             <div>
               <label class="block text-sm font-medium mb-1" for="entryDate">Planned Date of Entry</label>
@@ -141,10 +147,10 @@
             </div>
             <div>
               <label class="block text-sm font-medium mb-1" for="stayDuration">Duration of Stay</label>
-              <input id="stayDuration" type="text" class="w-full border rounded-md p-2" placeholder="10 days" />
+              <input id="stayDuration" type="text" class="w-full border rounded-md p-2" placeholder="e.g., 90 days" />
             </div>
             <div>
-              <label class="block text-sm font-medium mb-1" for="invited">Invited by someone in this Country?</label>
+              <label class="block text-sm font-medium mb-1" for="invited">Invited by someone?</label>
               <select id="invited" class="w-full border rounded-md p-2">
                 <option value="">Select</option><option>Yes</option><option>No</option>
               </select>
@@ -153,6 +159,7 @@
               <label class="block text-sm font-medium mb-1" for="stayDetails">Accommodation / Host Details</label>
               <textarea id="stayDetails" rows="2" class="w-full border rounded-md p-2" placeholder="Hotel info or host address"></textarea>
             </div>
+
             <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium mb-1" for="inviterName">Inviter's Name</label>
@@ -173,13 +180,13 @@
             </div>
           </div>
 
-          <!-- Purpose-specific details -->
+          <!-- Purpose-specific -->
           <div id="businessBlock" class="hidden mt-3">
-            <label class="block text-sm font-medium mb-1">Business/Conference Details</label>
+            <label class="block text-sm font-medium mb-1">Business/Conference Details <span class="text-red-500">*</span></label>
             <textarea id="businessDetails" rows="2" class="w-full border rounded-md p-2" placeholder="Conference name, dates, invitation, who pays"></textarea>
           </div>
           <div id="medicalBlock" class="hidden mt-3">
-            <label class="block text-sm font-medium mb-1">Medical Details</label>
+            <label class="block text-sm font-medium mb-1">Medical Details <span class="text-red-500">*</span></label>
             <textarea id="medicalDetails" rows="2" class="w-full border rounded-md p-2" placeholder="Hospital name, appointment window, who covers costs"></textarea>
           </div>
         </div>
@@ -205,15 +212,19 @@
               <input id="currentBankBalance" type="text" class="w-full border rounded-md p-2" placeholder="₦5,600,000" />
             </div>
             <div>
-              <label class="block text-sm font-medium mb-1" for="estimatedTripCost">Estimated Trip Cost (GBP or ₦)</label>
-              <input id="estimatedTripCost" type="text" class="w-full border rounded-md p-2" placeholder="£2,000" />
+              <label class="block text-sm font-medium mb-1" for="estimatedTripCost">Estimated Trip Cost</label>
+              <input id="estimatedTripCost" type="text" class="w-full border rounded-md p-2" placeholder="£2,000 or ₦ amount" />
             </div>
             <div>
               <label class="block text-sm font-medium mb-1" for="funding">Funding Source</label>
               <select id="funding" class="w-full border rounded-md p-2">
                 <option value="">Self-funded</option>
-                <option>Employer</option><option>Family</option><option>Sponsor</option><option>Other</option>
+                <option>Employer</option>
+                <option>Family</option>
+                <option>Sponsor</option>
+                <option>Other</option>
               </select>
+              <input id="fundingOther" type="text" class="w-full border rounded-md p-2 mt-2 hidden" placeholder="Explain other funding source…" />
             </div>
             <div class="md:col-span-2">
               <label class="block text-sm font-medium mb-1" for="bankStatementDetails">Bank Statement Details</label>
@@ -227,7 +238,7 @@
           <div id="financeCalc" class="mt-2 text-sm text-gray-700 hidden"></div>
         </div>
 
-        <!-- Consular details -->
+        <!-- Consular -->
         <div>
           <h2 class="text-xl font-semibold">Consular Details</h2>
           <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -246,7 +257,7 @@
           </div>
         </div>
 
-        <!-- Ties & commitments -->
+        <!-- Ties -->
         <div>
           <h2 class="text-xl font-semibold">Ties to Nigeria & Commitments</h2>
           <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -269,7 +280,7 @@
           </div>
         </div>
 
-        <!-- Travel & visa history -->
+        <!-- History -->
         <div>
           <h2 class="text-xl font-semibold">Travel & Visa History</h2>
           <div class="mt-3">
@@ -291,11 +302,11 @@
           <h2 class="text-xl font-semibold pt-4">Sponsor Information</h2>
           <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium mb-1" for="sponsorName">Sponsor's Name</label>
+              <label class="block text-sm font-medium mb-1" for="sponsorName">Sponsor's Name <span class="text-red-500 sponsor-req hidden">*</span></label>
               <input id="sponsorName" type="text" class="w-full border rounded-md p-2" />
             </div>
             <div>
-              <label class="block text-sm font-medium mb-1" for="sponsorRelationship">Sponsor's Relationship</label>
+              <label class="block text-sm font-medium mb-1" for="sponsorRelationship">Sponsor's Relationship <span class="text-red-500 sponsor-req hidden">*</span></label>
               <input id="sponsorRelationship" type="text" class="w-full border rounded-md p-2" />
             </div>
             <div>
@@ -329,7 +340,7 @@
             </div>
             <div>
               <label class="block text-sm font-medium mb-1" for="compellingReasons">Compelling Personal Reasons</label>
-              <textarea id="compellingReasons" rows="2" class="w-full border rounded-md p-2"></textarea>
+              <textarea id="compellingReasons" rows="2" class="w-full border rounded-md p-2" placeholder="Brief human context that shows sincerity (e.g., family milestone, academic opportunity)."></textarea>
             </div>
             <div class="md:col-span-2">
               <label class="block text-sm font-medium mb-1" for="supportingLetters">Supporting Letters/Documents</label>
@@ -337,12 +348,12 @@
             </div>
             <div class="md:col-span-2">
               <label class="block text-sm font-medium mb-1" for="potentialWeaknesses">Potential Weaknesses to Explain</label>
-              <textarea id="potentialWeaknesses" rows="2" class="w-full border rounded-md p-2" placeholder="e.g., low balance, new account, gaps in employment"></textarea>
+              <textarea id="potentialWeaknesses" rows="2" class="w-full border rounded-md p-2" placeholder="e.g., low balance, new account, short employment history."></textarea>
             </div>
           </div>
         </div>
 
-        <!-- Submit -->
+        <!-- Actions -->
         <div class="pt-2 flex items-center gap-4">
           <button id="generateBtn" type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50 disabled:pointer-events-none">Generate Letter</button>
           <div id="spinner" class="spinner hidden"></div>
@@ -373,109 +384,123 @@
     const downloadBtn = document.getElementById('downloadBtn');
     const printBtn = document.getElementById('printBtn');
 
+    // Controls
     const applicationType = document.getElementById('applicationType');
     const employmentStatus = document.getElementById('employmentStatus');
     const isSponsored = document.getElementById('isSponsored');
     const visaType = document.getElementById('visaType');
+    const visaTypeOther = document.getElementById('visaTypeOther');
+    const funding = document.getElementById('funding');
+    const fundingOther = document.getElementById('fundingOther');
 
+    // Blocks
     const sponsorBlock = document.getElementById('sponsorBlock');
     const refusalBlock = document.getElementById('refusalBlock');
     const businessBlock = document.getElementById('businessBlock');
     const medicalBlock = document.getElementById('medicalBlock');
 
+    // Fields
     const visaRefusals = document.getElementById('visaRefusals');
     const businessDetails = document.getElementById('businessDetails');
     const medicalDetails = document.getElementById('medicalDetails');
+    const sponsorName = document.getElementById('sponsorName');
+    const sponsorRelationship = document.getElementById('sponsorRelationship');
+    const sponsorReqBadges = document.querySelectorAll('.sponsor-req');
 
     const monthlyExpenses = document.getElementById('monthlyExpenses');
     const currentBankBalance = document.getElementById('currentBankBalance');
     const estimatedTripCost = document.getElementById('estimatedTripCost');
     const financeCalc = document.getElementById('financeCalc');
 
+    // Helpers
+    function setRequired(el, on) {
+      if (!el) return;
+      if (on) el.setAttribute('required','required'); else el.removeAttribute('required');
+    }
+    function show(el, on){ el.classList.toggle('hidden', !on); }
+    function v(id){ return document.getElementById(id)?.value?.trim() || '' }
+    function num(x){ if(!x) return NaN; const s=(''+x).replace(/[^0-9.\-]/g,''); const n=parseFloat(s); return isNaN(n)?NaN:n; }
+
     // Conditional UI
     applicationType.addEventListener('change', () => {
-      refusalBlock.classList.toggle('hidden', applicationType.value !== 'Reapplication');
+      const reapp = applicationType.value === 'Reapplication';
+      show(refusalBlock, reapp);
+      setRequired(visaRefusals, reapp);
     });
 
     isSponsored.addEventListener('change', () => {
-      sponsorBlock.classList.toggle('hidden', isSponsored.value !== 'Yes');
+      const on = isSponsored.value === 'Yes';
+      show(sponsorBlock, on);
+      setRequired(sponsorName, on);
+      setRequired(sponsorRelationship, on);
+      sponsorReqBadges.forEach(b=>b.classList.toggle('hidden', !on));
     });
 
     visaType.addEventListener('change', () => {
       const v = visaType.value;
-      businessBlock.classList.toggle('hidden', v !== 'Business');
-      medicalBlock.classList.toggle('hidden', v !== 'Medical');
+      show(businessBlock, v === 'Business');
+      setRequired(businessDetails, v === 'Business');
+
+      show(medicalBlock, v === 'Medical');
+      setRequired(medicalDetails, v === 'Medical');
+
+      show(visaTypeOther, v === 'Other');
+      setRequired(visaTypeOther, v === 'Other');
     });
 
-    // Helper: parse number safely from ₦/£ strings
-    function num(x){
-      if(!x) return NaN;
-      const s = (''+x).replace(/[^0-9.\-]/g,'');
-      const n = parseFloat(s);
-      return isNaN(n) ? NaN : n;
-    }
+    funding.addEventListener('change', () => {
+      const on = funding.value === 'Other';
+      show(fundingOther, on);
+      setRequired(fundingOther, on);
+    });
 
-    // Live finance calculation (for SOP affordability)
-    [monthlyExpenses, estimatedTripCost, currentBankBalance].forEach(el=>{
+    // Live finance calculation (just guidance text)
+    [monthlyExpenses, estimatedTripCost, currentBankBalance, document.getElementById('income')].forEach(el=>{
       el.addEventListener('input', showFinance);
     });
     function showFinance(){
-      const income = num(document.getElementById('income').value);
-      const expenses = num(monthlyExpenses.value);
-      const trip = num(estimatedTripCost.value);
-      const balance = num(currentBankBalance.value);
-
-      if(isNaN(income) && isNaN(expenses) && isNaN(trip) && isNaN(balance)){
+      const income = num(v('income'));
+      const expenses = num(v('monthlyExpenses'));
+      const trip = num(v('estimatedTripCost'));
+      const balance = num(v('currentBankBalance'));
+      if([income,expenses,trip,balance].every(Number.isNaN)){
         financeCalc.classList.add('hidden'); financeCalc.textContent=''; return;
       }
       const disp = (isNaN(income)?0:income) - (isNaN(expenses)?0:expenses);
       const ratio = isNaN(trip) || disp<=0 ? null : (trip/disp);
       const remain = isNaN(balance) || isNaN(trip) ? null : (balance - trip);
-
       financeCalc.classList.remove('hidden');
       financeCalc.innerHTML = `
         <div class="p-3 bg-blue-50 border border-blue-200 rounded-md">
           <div><span class="font-semibold">Disposable Income (≈):</span> ${isNaN(disp)?'—':disp.toLocaleString()}</div>
-          <div><span class="font-semibold">Trip/Disposable Ratio:</span> ${ratio===null?'—':ratio.toFixed(2)} ${ratio!==null? (ratio<=1?'(Affordable within ~1 month)':'(May need sponsor/assets)'):''}</div>
+          <div><span class="font-semibold">Trip/Disposable Ratio:</span> ${ratio===null?'—':ratio.toFixed(2)} ${ratio!==null? (ratio<=1?'(Looks affordable)':'(May require sponsor/assets)'):''}</div>
           <div><span class="font-semibold">Balance after Trip (≈):</span> ${remain===null?'—':remain.toLocaleString()}</div>
-        </div>
-      `;
+        </div>`;
     }
 
-    // Collect form values
-    function v(id){ return document.getElementById(id)?.value?.trim() || '' }
+    // Data collection
     function getFormData(){
-      // Purpose-specific → fold into specialEvents for backend
+      // Merge special purpose blocks into specialEvents
       let special = v('specialEvents');
-      if(visaType.value==='Business' && businessDetails.value){
-        special += (special?'\n':'') + `Business/Conference: ${businessDetails.value}`;
-      }
-      if(visaType.value==='Medical' && medicalDetails.value){
-        special += (special?'\n':'') + `Medical: ${medicalDetails.value}`;
-      }
+      const vt = visaType.value === 'Other' ? `Other (${v('visaTypeOther')})` : visaType.value;
+      if(vt === 'Business' && v('businessDetails')) special += (special?'\n':'') + `Business/Conference: ${v('businessDetails')}`;
+      if(vt === 'Medical' && v('medicalDetails')) special += (special?'\n':'') + `Medical: ${v('medicalDetails')}`;
 
-      // Finance synthesis appended to bankStatementDetails (so server uses it)
-      const income = v('income');
-      const exp = v('monthlyExpenses');
-      const bal = v('currentBankBalance');
-      const trip = v('estimatedTripCost');
-      const summaryBits = [];
-      if(income) summaryBits.push(`Monthly Income: ${income}`);
-      if(exp) summaryBits.push(`Monthly Expenses: ${exp}`);
-      if(bal) summaryBits.push(`Current Bank Balance: ${bal}`);
-      if(trip) summaryBits.push(`Estimated Trip Cost: ${trip}`);
+      // “Other” funding normalized
+      const fundingValue = funding.value === 'Other' && v('fundingOther')
+        ? `Other: ${v('fundingOther')}`
+        : (funding.value || '');
 
-      // Also reflect SOP flags into fields server already understands
-      // - Reapplication reasons -> visaRefusals
-      // - Sponsored? -> sponsorSelf = Yes/No
-      const flags = [];
-      if(applicationType.value) flags.push(`Application Type: ${applicationType.value}`);
-      if(employmentStatus.value) flags.push(`Employment Status: ${employmentStatus.value}`);
-      if(isSponsored.value) flags.push(`Sponsored: ${isSponsored.value}`);
-      if(flags.length) summaryBits.push(flags.join(' | '));
-
-      const bankDetailsExisting = v('bankStatementDetails');
-      const bankSynthesis = summaryBits.length ? `${bankDetailsExisting ? bankDetailsExisting + '\n' : ''}${summaryBits.join(' • ')}` : bankDetailsExisting;
+      // Finance synthesis appended to bankStatementDetails
+      const bits = [];
+      if(v('income')) bits.push(`Monthly Income: ${v('income')}`);
+      if(v('monthlyExpenses')) bits.push(`Monthly Expenses: ${v('monthlyExpenses')}`);
+      if(v('currentBankBalance')) bits.push(`Current Bank Balance: ${v('currentBankBalance')}`);
+      if(v('estimatedTripCost')) bits.push(`Estimated Trip Cost: ${v('estimatedTripCost')}`);
+      if(applicationType.value) bits.push(`Application Type: ${applicationType.value}`);
+      if(employmentStatus.value) bits.push(`Employment Status: ${employmentStatus.value}`);
+      if(isSponsored.value) bits.push(`Sponsored: ${isSponsored.value}`);
+      const bankSynth = [v('bankStatementDetails'), bits.join(' • ')].filter(Boolean).join('\n');
 
       return {
         // Personal
@@ -494,7 +519,7 @@
 
         // Travel
         destination: v('destination'),
-        visaType: v('visaType'),
+        visaType: vt,
         purpose: v('purpose'),
         travelDates: v('travelDates'),
         entryDate: v('entryDate'),
@@ -507,19 +532,22 @@
         stayDetails: v('stayDetails'),
         travelItinerary: v('travelItinerary'),
 
-        // Employment & Finances
+        // Employment & finances
         occupation: v('occupation'),
         employerName: v('employerName'),
         employerAddress: v('employerAddress'),
         employmentDuration: v('employmentDuration'),
-        income,
+        income: v('income'),
         otherIncome: v('otherIncome'),
-        funding: v('funding'),
-        bankStatementDetails: bankSynthesis,
+        funding: fundingValue,
+        bankStatementDetails: bankSynth,
         significantTransactions: v('significantTransactions'),
+        monthlyExpenses: v('monthlyExpenses'),
+        currentBankBalance: v('currentBankBalance'),
+        estimatedTripCost: v('estimatedTripCost'),
 
-        // Logistics / Consular
-        accommodation: v('stayDetails') || v('accommodation'), // prefer stayDetails
+        // Consular/logistics
+        accommodation: v('stayDetails') || v('accommodation'),
         documents: v('documents'),
         embassyName: v('embassyName'),
         embassyAddress: v('embassyAddress'),
@@ -559,27 +587,21 @@
       if(!data.age) missing.push('Age');
       if(!data.nationality) missing.push('Nationality');
       if(!data.destination) missing.push('Destination Country');
-      if(!data.visaType) missing.push('Visa Type');
+      if(!visaType.value) missing.push('Visa Type');
+      if(visaType.value==='Other' && !v('visaTypeOther')) missing.push('Visa Type (Other explanation)');
       if(!data.purpose) missing.push('Purpose of Travel');
       if(!data.income) missing.push('Monthly Income');
       if(!applicationType.value) missing.push('Application Type');
       if(!employmentStatus.value) missing.push('Employment Status');
       if(!isSponsored.value) missing.push('Sponsored?');
-
-      // Conditional requirements
-      if(applicationType.value==='Reapplication' && !v('visaRefusals')){
-        missing.push('Refusal Reasons');
-      }
+      if(applicationType.value==='Reapplication' && !v('visaRefusals')) missing.push('Refusal Reasons');
       if(isSponsored.value==='Yes'){
         if(!v('sponsorName')) missing.push('Sponsor Name');
         if(!v('sponsorRelationship')) missing.push('Sponsor Relationship');
       }
-      if(visaType.value==='Business' && !v('businessDetails')){
-        missing.push('Business/Conference Details');
-      }
-      if(visaType.value==='Medical' && !v('medicalDetails')){
-        missing.push('Medical Details');
-      }
+      if(visaType.value==='Business' && !v('businessDetails')) missing.push('Business/Conference Details');
+      if(visaType.value==='Medical' && !v('medicalDetails')) missing.push('Medical Details');
+      if(funding.value==='Other' && !v('fundingOther')) missing.push('Funding Source (Other explanation)');
       return missing;
     }
 
@@ -626,25 +648,11 @@
       }
     });
 
-    copyBtn.addEventListener('click', async ()=>{
-      try{ await navigator.clipboard.writeText(output.value); alert('Letter copied to clipboard'); }
-      catch{ alert('Could not copy'); }
-    });
+    // Utilities
+    copyBtn.addEventListener('click', async ()=>{ try{ await navigator.clipboard.writeText(output.value); alert('Letter copied to clipboard'); } catch{ alert('Could not copy'); } });
+    downloadBtn.addEventListener('click', ()=>{ const blob = new Blob([output.value], { type: 'application/msword' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'visa_cover_letter.doc'; document.body.appendChild(a); a.click(); URL.revokeObjectURL(url); a.remove(); });
+    printBtn.addEventListener('click', ()=>{ const win = window.open('', '_blank'); if(!win) return; win.document.write(`<!doctype html><html><head><title>Visa Cover Letter</title></head><body style="white-space: pre-wrap; font-family: serif; margin: 40px;">${output.value.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</body></html>`); win.document.close(); win.focus(); win.print(); });
 
-    downloadBtn.addEventListener('click', ()=>{
-      const blob = new Blob([output.value], { type: 'application/msword' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = 'visa_cover_letter.doc';
-      document.body.appendChild(a); a.click(); URL.revokeObjectURL(url); a.remove();
-    });
-
-    printBtn.addEventListener('click', ()=>{
-      const win = window.open('', '_blank'); if(!win) return;
-      win.document.write(`<!doctype html><html><head><title>Visa Cover Letter</title></head><body style="white-space: pre-wrap; font-family: serif; margin: 40px;">${
-        output.value.replace(/</g,'&lt;').replace(/>/g,'&gt;')
-      }</body></html>`); win.document.close(); win.focus(); win.print();
-    });
   </script>
 </body>
 </html>
