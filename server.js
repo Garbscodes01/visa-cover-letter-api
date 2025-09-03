@@ -1,9 +1,11 @@
 /**
- * Visa Letter API — SOP-enforced, Naira-first, Emotion-aware
- * - Fails fast if required SOP assets are missing (rules, mini_templates, samples)
- * - Uses Naira (₦) by default unless intake explicitly contains another currency symbol/code
- * - Scenario-aware (sponsored, medical, business, self-employed, refusal/re-application, tourist first-time)
- * - Same request/response contract as before: POST /generate-letter -> { letter }
+ * Visa Letter API — SOP-STRICT, Nigeria-first
+ * ------------------------------------------------------------
+ * - Fails fast if required SOP assets are missing
+ * - Reads /rules, /mini_templates, /samples (MANDATORY)
+ * - Empathetic, scenario-aware prompt builder
+ * - Uses ₦ by default when staff didn’t specify a currency symbol
+ * - Same external API: POST /generate-letter -> { letter }
  */
 
 const fs = require('fs');
@@ -12,7 +14,7 @@ const express = require('express');
 const cors = require('cors');
 const { OpenAI } = require('openai');
 
-/* ------------------------ Load .env for local dev ------------------------ */
+// ------------------------ Load .env for local dev ------------------------
 function loadEnv() {
   const envPath = path.join(__dirname, '.env');
   if (!fs.existsSync(envPath)) return;
@@ -28,20 +30,20 @@ function loadEnv() {
 }
 loadEnv();
 
-/* ------------------------ Required env ------------------------ */
+// ------------------------ Required env ------------------------
 if (!process.env.OPENAI_API_KEY) {
   console.error('❌ Missing OPENAI_API_KEY');
   process.exit(1);
 }
-
 const MODEL_NAME = process.env.MODEL_NAME || 'gpt-5-mini';
 const FALLBACK_MODEL = process.env.FALLBACK_MODEL || 'gpt-4o-mini';
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || ''; // e.g. https://visa-cover-letter-api-1.onrender.com
 
-/* ------------------------ App & Middleware ------------------------ */
+// ------------------------ App & Middleware ------------------------
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Strict CORS to your static origin (or permissive in dev if not set)
 if (FRONTEND_ORIGIN) {
   const allowedOrigins = new Set([
     FRONTEND_ORIGIN,
@@ -64,17 +66,16 @@ if (FRONTEND_ORIGIN) {
   app.use(cors());
   app.options('*', cors());
 }
-
 app.use(express.json({ limit: '1mb' }));
 
-/* ------------------------ OpenAI Client ------------------------ */
+// ------------------------ OpenAI Client ------------------------
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   organization: process.env.OPENAI_ORG_ID || process.env.OPENAI_ORG || undefined,
   project: process.env.OPENAI_PROJECT_ID || process.env.OPENAI_PROJECT || undefined,
 });
 
-/* ------------------------ SOP Assets (MUST LOAD) ------------------------ */
+// ------------------------ SOP Assets (MANDATORY) ------------------------
 const RULES_DIR = path.join(__dirname, 'rules');
 const MINIS_DIR = path.join(__dirname, 'mini_templates');
 const SAMPLES_DIR = path.join(__dirname, 'samples');
@@ -83,18 +84,27 @@ for (const d of [RULES_DIR, MINIS_DIR, SAMPLES_DIR]) {
   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
 }
 
-const REQ_RULES = [
-  'master_rules.txt',
-  'structure_guide.txt',
-  'quality_checklist.txt',
-];
-const ALT_MASTER_TEMPLATE = ['master_template.txt', 'master_templete.txt'];
-
-function mustRead(filePath, label) {
-  if (!fs.existsSync(filePath)) {
-    throw new Error(`Missing required ${label}: ${path.relative(process.cwd(), filePath)}`);
+function requireFile(p, label) {
+  if (!fs.existsSync(p)) {
+    console.error(`❌ Missing required ${label}: ${p}`);
+    process.exit(1);
   }
-  return fs.readFileSync(filePath, 'utf8');
+  return fs.readFileSync(p, 'utf8');
+}
+function requireAtLeastOneTxt(dir, label) {
+  if (!fs.existsSync(dir)) {
+    console.error(`❌ Missing required directory: ${dir} (${label})`);
+    process.exit(1);
+  }
+  const files = fs.readdirSync(dir).filter((f) => /\.(txt|md)$/i.test(f));
+  if (!files.length) {
+    console.error(`❌ No .txt/.md files found in ${dir} (${label})`);
+    process.exit(1);
+  }
+  return files.map((name) => ({
+    name,
+    text: fs.readFileSync(path.join(dir, name), 'utf8'),
+  }));
 }
 
 function clip(text = '', max = 4000) {
@@ -102,238 +112,186 @@ function clip(text = '', max = 4000) {
   return s.length <= max ? s.trim() : (s.slice(0, max).trim() + '\n…');
 }
 
-function readAllTxt(dir) {
-  if (!fs.existsSync(dir)) return [];
-  return fs.readdirSync(dir)
-    .filter((f) => /\.(txt|md)$/i.test(f))
-    .map((name) => ({ name, text: fs.readFileSync(path.join(dir, name), 'utf8') }));
+function loadSOPStrict() {
+  // Required rule files
+  const masterRules = requireFile(path.join(RULES_DIR, 'master_rules.txt'), 'rules/master_rules.txt');
+  const structureGuide = requireFile(path.join(RULES_DIR, 'structure_guide.txt'), 'rules/structure_guide.txt');
+  const qualityChecklist = requireFile(path.join(RULES_DIR, 'quality_checklist.txt'), 'rules/quality_checklist.txt');
+  // Allow either spelling for master template
+  let masterTemplate = '';
+  const m1 = path.join(RULES_DIR, 'master_template.txt');
+  const m2 = path.join(RULES_DIR, 'master_templete.txt');
+  if (fs.existsSync(m1)) masterTemplate = fs.readFileSync(m1, 'utf8');
+  else if (fs.existsSync(m2)) masterTemplate = fs.readFileSync(m2, 'utf8');
+  else {
+    console.error('❌ Missing required rules/master_template.txt (or master_templete.txt)');
+    process.exit(1);
+  }
+
+  // Require at least one mini-template and one sample
+  const minis = requireAtLeastOneTxt(MINIS_DIR, 'mini templates');
+  const samples = requireAtLeastOneTxt(SAMPLES_DIR, 'samples');
+
+  return {
+    masterRules,
+    structureGuide,
+    qualityChecklist,
+    masterTemplate,
+    minis,
+    samples,
+  };
+}
+const SOP = loadSOPStrict();
+
+function buildStyleDigest(files, { maxFiles = 10, perFileChars = 900, totalChars = 5000 } = {}) {
+  let out = '';
+  const use = files.slice(0, maxFiles);
+  for (let i = 0; i < use.length; i++) {
+    const chunk = clip(use[i].text, perFileChars);
+    const next = `\n\n### Sample ${i + 1}: ${use[i].name}\n${chunk}`;
+    if ((out + next).length > totalChars) break;
+    out += next;
+  }
+  return out.trim();
+}
+const STYLE_DIGEST = buildStyleDigest(SOP.samples);
+
+// Quick index of minis by loose name
+function getMini(namePart) {
+  const hit = SOP.minis.find(f => f.name.toLowerCase().includes(namePart));
+  return hit ? clip(hit.text, 1400) : '';
 }
 
-// Load + validate at startup
-let ASSETS = {
-  masterRules: '',
-  structureGuide: '',
-  qualityChecklist: '',
-  masterTemplate: '',
-  minis: {},       // map filename -> text
-  samples: [],     // [{name,text}]
-};
-
-(function loadAssetsStrict() {
-  try {
-    // rules
-    for (const f of REQ_RULES) {
-      ASSETS[f] = mustRead(path.join(RULES_DIR, f), 'rules file');
-    }
-    // master template (either spelling)
-    let mt = '';
-    for (const alt of ALT_MASTER_TEMPLATE) {
-      const p = path.join(RULES_DIR, alt);
-      if (fs.existsSync(p)) { mt = fs.readFileSync(p, 'utf8'); break; }
-    }
-    if (!mt) throw new Error('Missing required rules file: master_template(.txt) or master_templete(.txt)');
-    ASSETS.masterTemplate = mt;
-
-    // mini_templates (at least 1)
-    const minis = readAllTxt(MINIS_DIR);
-    if (!minis.length) throw new Error('mini_templates/ must contain at least one .txt/.md file');
-    ASSETS.minis = minis.reduce((acc, f) => { acc[f.name] = f.text; return acc; }, {});
-
-    // samples (at least 1)
-    const samples = readAllTxt(SAMPLES_DIR);
-    if (!samples.length) throw new Error('samples/ must contain at least one .txt/.md file');
-    ASSETS.samples = samples;
-
-    // Map canonical names for convenience
-    ASSETS.masterRules = ASSETS['master_rules.txt'];
-    ASSETS.structureGuide = ASSETS['structure_guide.txt'];
-    ASSETS.qualityChecklist = ASSETS['quality_checklist.txt'];
-
-    console.log(`✅ SOP assets loaded. rules=${REQ_RULES.length + 1} minis=${minis.length} samples=${samples.length}`);
-  } catch (e) {
-    console.error('❌ SOP asset loading failed:', e.message);
-    process.exit(1); // enforce MUST
-  }
-})();
-
-/* ------------------------ Utilities ------------------------ */
+// ------------------------ Utilities ------------------------
 function clean(v) {
   if (v === undefined || v === null) return undefined;
   const s = String(v).trim();
   return s.length ? s : undefined;
 }
 
-function containsForeignCurrencyHint(s = '') {
-  // If staff typed other currency symbols/codes in intake, we won't override.
-  return /USD|GBP|EUR|\$|£|€/i.test(String(s || ''));
+// Detect “sponsored” intent reliably
+function isSponsoredPayload(b) {
+  const f = (b.funding || '').toLowerCase();
+  if (f === 'sponsor' || f === 'sponsored' || f === 'sponsorship') return true;
+  if (String(b.sponsorSelf || '').toLowerCase() === 'no') return true;
+  if (b.sponsorName || b.sponsorRelationship) return true;
+  return false;
 }
 
-function buildStyleDigest({ maxFiles = 8, perFileChars = 800, totalChars = 4000 } = {}) {
-  const files = ASSETS.samples.slice(0, maxFiles);
-  let out = '';
-  for (let i = 0; i < files.length; i++) {
-    const chunk = clip(files[i].text, perFileChars);
-    const next = `\n\n### Sample ${i + 1}: ${files[i].name}\n${chunk}`;
-    if ((out + next).length > totalChars) break;
-    out += next;
-  }
-  return out.trim();
-}
-
-/* ------------------------ Prompt Builder ------------------------ */
-function buildMessages(detailLines, intentFlags) {
-  const styleDigest = buildStyleDigest();
-
-  // Map minis by semantic key (file names can differ; match by contains)
-  const miniLookup = (needle) => {
-    const f = Object.entries(ASSETS.minis).find(([name]) => name.toLowerCase().includes(needle));
-    return f ? f[1] : '';
-  };
-  const mini = {
-    refusal: clip(miniLookup('refusal'), 1200),
-    sponsor: clip(miniLookup('sponsor'), 1200),
-    selfEmp: clip(miniLookup('self_employ'), 1200),
-    medical: clip(miniLookup('medical'), 900),
-    business: clip(miniLookup('business'), 900),
-    touristFirst: clip(miniLookup('tourist') || miniLookup('first_time'), 900),
-  };
-
+// ---------- Prompt Builder (SOP-aware, empathetic) ----------
+function buildMessages(detailLines, payload) {
   const joined = detailLines.join('\n');
 
+  // Extract some fields to steer structure
   const getField = (label) => {
     const m = new RegExp('^' + label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*:\\s*(.+)$', 'mi').exec(joined);
     return m ? m[1].trim() : undefined;
   };
-
   const destination = getField('Destination') || getField('Destination Country') || '[Destination]';
   const visaType = getField('Visa Type') || 'Visitor';
+  const purpose = getField('Purpose of Travel') || '';
 
   const refusalPresent =
-    /(^|\n)\s*Visa Refusals:/i.test(joined) ||
-    /(^|\n)\s*Previous Visa Refusals/i.test(joined) ||
-    /\brefusal(s)?\b/i.test(joined) ||
-    (intentFlags?.applicationType === 'Reapplication');
+    /(^|\n)\s*(Visa Refusals|Previous Visa Refusals)\s*:/i.test(joined) ||
+    /\brefusal(s)?\b/i.test(purpose);
 
-  const sponsored =
-    /(^|\n)\s*Self-sponsored:\s*No/i.test(joined) ||
-    /(^|\n)\s*Sponsor Name:/i.test(joined) ||
-    (intentFlags?.isSponsored === 'Yes');
+  const sponsored = isSponsoredPayload(payload);
+  const selfEmployed = /(^|\n)\s*Occupation:\s*(owner|self|founder|ceo|proprietor)/i.test(joined) ||
+                       /(^|\n)\s*Employment Status:\s*Self-employed/i.test(joined);
 
-  const selfEmployed =
-    /(^|\n)\s*Occupation:\s*(owner|self|founder|ceo|proprietor)/i.test(joined) ||
-    (intentFlags?.employmentStatus && intentFlags.employmentStatus.toLowerCase().includes('self'));
+  const isMedical = /(^|\n)\s*Medical:/i.test(joined) || /(^|\n)\s*Visa Type:\s*Medical/i.test(joined);
+  const isStudy   = /(^|\n)\s*Visa Type:\s*Study/i.test(joined);
+  const isBusiness= /(^|\n)\s*Visa Type:\s*Business/i.test(joined);
+  const isTourist = /(^|\n)\s*Visa Type:\s*Tourist/i.test(joined);
+  const isVisit   = /(^|\n)\s*Visa Type:\s*Visit/i.test(joined);
 
-  const businessPurpose =
-    /(^|\n)\s*Purpose of Travel:\s*.*(business|conference|training)/i.test(joined) ||
-    /Visa Type:\s*Business/i.test(joined);
-
-  const medicalPurpose =
-    /(^|\n).*(Medical:|medical)/i.test(joined) ||
-    /(^|\n)\s*Purpose of Travel:\s*.*medical/i.test(joined) ||
-    /Visa Type:\s*Medical/i.test(joined);
-
-  const hasTravelHistory = /(^|\n)\s*Travel History:\s*\S+/i.test(joined);
-  const touristFirstTime = !hasTravelHistory && /(^|\n)\s*Purpose of Travel:\s*.*(tourism|holiday|visit)/i.test(joined);
-
-  const hasTies = /Property Details:|Family\/Dependents:|Business\/Employment Commitments:/i.test(joined);
   const hasWeaknesses = /(^|\n)\s*Potential Weaknesses:\s*\S+/i.test(joined);
-  const hasCompelling = /(^|\n)\s*Compelling Reasons:\s*\S+/i.test(joined);
 
-  const currencyHintPresent =
-    containsForeignCurrencyHint(joined) ||
-    containsForeignCurrencyHint(getField('Bank Statement Details')) ||
-    containsForeignCurrencyHint(getField('Monthly Income'));
+  // tone selection
+  const tone =
+    isMedical || hasWeaknesses ? 'Warm, empathetic and respectful, but concise and professional.' :
+    (isVisit || isTourist || isStudy) ? 'Courteous, positive, and professional.' :
+    'Formal, direct, and professional.';
 
-  const toneHint = (hasCompelling || hasWeaknesses || medicalPurpose)
-    ? 'Warm, empathetic yet professional. Acknowledge context briefly without over-sharing.'
-    : 'Formal, respectful, confident.';
-
-  const scenarioHints = [];
+  // Scenario hints + minis
   const blocks = [];
-
+  const hints = [];
   if (refusalPresent) {
-    scenarioHints.push('Reapplication after refusal: briefly address each point and show new evidence only.');
-    if (mini.refusal) blocks.push('--- MINI (Reapplication) ---\n' + mini.refusal);
+    hints.push('Reapplication after refusal: provide a brief, factual clarification to each refusal point and show new evidence.');
+    const t = getMini('refusal');
+    if (t) blocks.push('--- MINI (Reapplication) ---\n' + t);
   }
   if (sponsored) {
-    scenarioHints.push('Sponsored: clearly state sponsor identity, relationship, income, accommodation, and sponsor documents.');
-    if (mini.sponsor) blocks.push('--- MINI (Sponsored) ---\n' + mini.sponsor);
+    hints.push('Sponsored: identify sponsor, relationship, income, accommodation support, and list sponsor documents clearly.');
+    const t = getMini('sponsor');
+    if (t) blocks.push('--- MINI (Sponsor) ---\n' + t);
   }
   if (selfEmployed) {
-    scenarioHints.push('Self-employed: reference CAC/registration, tax returns, invoices if provided.');
-    if (mini.selfEmp) blocks.push('--- MINI (Self-employed) ---\n' + mini.selfEmp);
+    hints.push('Self-employed: reference business registration (CAC), tax returns, and invoices where provided.');
+    const t = getMini('self_employed');
+    if (t) blocks.push('--- MINI (Self-employed) ---\n' + t);
   }
-  if (businessPurpose) {
-    scenarioHints.push('Business/Conference: include event name, dates, invitation, and who covers costs.');
-    if (mini.business) blocks.push('--- MINI (Business/Conference) ---\n' + mini.business);
+  if (isMedical) {
+    const t = getMini('medical');
+    if (t) blocks.push('--- MINI (Medical) ---\n' + t);
   }
-  if (medicalPurpose) {
-    scenarioHints.push('Medical: include hospital/appointment details, timeline, and funding source.');
-    if (mini.medical) blocks.push('--- MINI (Medical) ---\n' + mini.medical);
+  if (isBusiness) {
+    const t = getMini('business');
+    if (t) blocks.push('--- MINI (Business/Conference) ---\n' + t);
   }
-  if (touristFirstTime) {
-    scenarioHints.push('Tourist, first-time traveler: reassure ties and capability; tone welcoming but formal.');
-    if (mini.touristFirst) blocks.push('--- MINI (Tourist First-time) ---\n' + mini.touristFirst);
+  if (isTourist && !/Travel History:\s*\S+/i.test(joined)) {
+    const t = getMini('tourist');
+    if (t) blocks.push('--- MINI (Tourist First-time) ---\n' + t);
   }
-  if (hasTies) {
-    scenarioHints.push('Emphasize strong ties to Nigeria (family, employment/business, property, commitments).');
-  }
+
+  // currency policy
+  const currencyPolicy = `When formatting amounts with no symbol, default to ₦ (Naira). If a symbol or currency word is already present (e.g., £, USD), keep exactly what was provided—do not convert.`;
 
   const systemMessage = {
     role: 'system',
     content:
-      `You are an expert consular assistant. Write embassy-acceptable visa cover letters for Nigeria-based applicants.
-Use ${toneHint}
-Do NOT invent facts. Keep paragraphs short, precise, and readable.
-
-Currency policy:
-- Default to Nigerian Naira (₦) formatting in amounts unless a different currency is explicitly present in the user's input.
-- If the user typed other symbols (e.g., $, £, €) or codes (USD, GBP, EUR), keep their original currency as written.
-
-Style policy:
-- Synthesize style from provided samples without copying lines verbatim.
-- Avoid flowery language; be human, sincere, and clear.
-- Never contradict the intake; omit any section with missing data.`
+      `You are an expert consular assistant for visa cover letters.\n` +
+      `Write embassy-acceptable letters using the following tone: ${tone}\n` +
+      `Paragraphs should be short and clear. Never invent facts. Be specific but concise.\n` +
+      `${currencyPolicy}\n` +
+      `Synthesize style from samples without copying any sentence verbatim.\n`
   };
 
   const guide = {
     role: 'user',
     content:
 `STRUCTURE (Plain text only):
-1) Applicant contact (if provided) + current date
+1) Applicant contact (if provided) + current date (Nigeria date format acceptable)
 2) Embassy block (if provided)
 3) Subject: "Application for ${visaType} Visa to ${destination}"
 4) Salutation
 5) Body:
    - Identity & travel dates
-   - Employment/Business & income
-   - Funding & accommodation
-   - Refusal rebuttal (if any)
-   - Supporting documents referenced
-   - Strong ties & return assurance
+   - Employment/Business & income (note if self-employed or student)
+   - Funding & accommodation (if sponsor/family/employer, spell it out)
+   - If reapplication: short clarification addressing refusal
+   - Supporting documents referenced (only those user mentioned)
+   - Strong ties to Nigeria & clear return assurance
 6) Closing: "Sincerely," + full name
 
---- RULES (clipped) ---
-${clip(ASSETS.masterRules, 3000)}
+--- MASTER RULES ---
+${clip(SOP.masterRules, 3000)}
 
---- STRUCTURE GUIDE (clipped) ---
-${clip(ASSETS.structureGuide, 1800)}
+--- STRUCTURE GUIDE ---
+${clip(SOP.structureGuide, 1800)}
 
---- QUALITY CHECKLIST (clipped) ---
-${clip(ASSETS.qualityChecklist, 1200)}
+--- QUALITY CHECKLIST ---
+${clip(SOP.qualityChecklist, 1200)}
 
---- MASTER TEMPLATE (clipped, adapt; do not copy) ---
-${clip(ASSETS.masterTemplate, 2500)}
+--- MASTER TEMPLATE (reference; adapt, never copy) ---
+${clip(SOP.masterTemplate, 2500)}
 
---- STYLE DIGEST (samples) ---
-${styleDigest || '(samples loaded but digest clipped)'}
+--- STYLE DIGEST (sample excerpts) ---
+${STYLE_DIGEST || '(no samples? but server would have refused to start)'}
 ${blocks.length ? '\n\n' + blocks.join('\n\n') : ''}
 
 --- SCENARIO HINTS ---
-${scenarioHints.length ? '- ' + scenarioHints.join('\n- ') : '(none)'}
-
---- CURRENCY HINT ---
-${currencyHintPresent ? 'User input contains non-Naira currency symbols/codes. Preserve those as written.' : 'Use ₦ for amounts unless the intake explicitly shows another currency.'}
+${hints.length ? '- ' + hints.join('\n- ') : '(none)'}
 `
   };
 
@@ -342,16 +300,16 @@ ${currencyHintPresent ? 'User input contains non-Naira currency symbols/codes. P
     content:
 `Use ONLY these facts (omit fields not provided). Do not hallucinate.
 
-${detailLines.map((l) => '- ' + l).join('\n')}
+${detailLines.map(l => '- ' + l).join('\n')}
 
 OUTPUT:
-Return one cohesive plain-text cover letter.`
+Return a single cohesive plain-text cover letter.`
   };
 
   return [systemMessage, guide, userInstruction];
 }
 
-/* ------------------------ Model call ------------------------ */
+// ------------------------ Model call ------------------------
 async function createLetter(messages) {
   const isGPT5Mini = /^gpt-5-mini/.test(MODEL_NAME);
   try {
@@ -359,7 +317,7 @@ async function createLetter(messages) {
       const resp = await openai.chat.completions.create({
         model: MODEL_NAME,
         messages,
-        // max_completion_tokens: 900, // optional cap for long letters
+        // max_completion_tokens: 900, // optional
       });
       return resp.choices?.[0]?.message?.content?.trim();
     } else {
@@ -386,31 +344,11 @@ async function createLetter(messages) {
   }
 }
 
-/* ------------------------ Health & Assets ------------------------ */
-app.get('/', (_req, res) => res.send('✅ Visa Letter API is running'));
-app.get('/health', (_req, res) => {
-  res.json({
-    ok: true,
-    model: MODEL_NAME,
-    rulesLoaded: REQ_RULES.length + 1, // + master template
-    miniTemplatesLoaded: Object.keys(ASSETS.minis).length,
-    samplesLoaded: ASSETS.samples.length,
-  });
-});
-app.get('/assets', (_req, res) => {
-  res.json({
-    rules: {
-      master_rules: !!ASSETS.masterRules,
-      structure_guide: !!ASSETS.structureGuide,
-      quality_checklist: !!ASSETS.qualityChecklist,
-      master_template: !!ASSETS.masterTemplate,
-    },
-    mini_templates: Object.keys(ASSETS.minis),
-    samples: ASSETS.samples.map(f => f.name),
-  });
-});
+// ------------------------ Health ------------------------
+app.get('/', (_req, res) => res.send('✅ Visa Letter API (SOP-STRICT) is running'));
+app.get('/health', (_req, res) => res.json({ ok: true, model: MODEL_NAME }));
 
-/* ------------------------ Main Endpoint ------------------------ */
+// ------------------------ Main Endpoint ------------------------
 app.post('/generate-letter', async (req, res) => {
   try {
     const b = req.body || {};
@@ -485,7 +423,7 @@ app.post('/generate-letter', async (req, res) => {
       supportingLetters: clean(b.supportingLetters),
       potentialWeaknesses: clean(b.potentialWeaknesses),
 
-      // Existing
+      // Branding / consular
       accommodation: clean(b.accommodation),
       documents: clean(b.documents),
       embassyName: clean(b.embassyName),
@@ -493,9 +431,15 @@ app.post('/generate-letter', async (req, res) => {
       companyName: clean(b.companyName) || 'No Guide Travel Agent',
     };
 
-    // Required intake (unchanged, but stricter messages)
+    // Required core fields
     const required = ['name', 'age', 'nationality', 'destination', 'visaType', 'purpose', 'income'];
     const missing = required.filter((k) => !payload[k]);
+
+    // Sponsor sanity: if sponsored intent but key fields missing
+    if (isSponsoredPayload({ ...payload })) {
+      if (!payload.sponsorName) missing.push('sponsorName (required when funding is Sponsor)');
+      if (!payload.sponsorRelationship) missing.push('sponsorRelationship (required when funding is Sponsor)');
+    }
     if (missing.length) {
       return res.status(400).json({ error: `Missing required fields: ${missing.join(', ')}` });
     }
@@ -521,12 +465,12 @@ app.post('/generate-letter', async (req, res) => {
     if (payload.entryDate) d.push(`Entry Date: ${payload.entryDate}`);
     if (payload.stayDuration) d.push(`Duration of Stay: ${payload.stayDuration}`);
     d.push(`Purpose of Travel: ${payload.purpose}`);
-    if (payload.invited) d.push(`Invited by someone in destination country?: ${payload.invited}`);
+    if (payload.invited) d.push(`Invited by someone?: ${payload.invited}`);
     if (payload.inviterName) d.push(`Inviter Name: ${payload.inviterName}`);
     if (payload.inviterAddress) d.push(`Inviter Address: ${payload.inviterAddress}`);
     if (payload.inviterRelationship) d.push(`Inviter Relationship: ${payload.inviterRelationship}`);
     if (payload.inviterDocs) d.push(`Inviter Documents: ${payload.inviterDocs}`);
-    if (payload.stayDetails) d.push(`Stay Details: ${payload.stayDetails}`);
+    if (payload.stayDetails) d.push(`Accommodation/Host Details: ${payload.stayDetails}`);
     if (payload.travelItinerary) d.push(`Travel Itinerary: ${payload.travelItinerary}`);
 
     if (payload.occupation) d.push(`Occupation: ${payload.occupation}`);
@@ -535,12 +479,12 @@ app.post('/generate-letter', async (req, res) => {
     if (payload.employmentDuration) d.push(`Employment Duration: ${payload.employmentDuration}`);
     d.push(`Monthly Income: ${payload.income}`);
     if (payload.otherIncome) d.push(`Other Income: ${payload.otherIncome}`);
-    d.push(`Funding Source: ${payload.funding || 'Self-funded'}`);
+    if (payload.funding) d.push(`Funding Source: ${payload.funding}`);
     if (payload.bankStatementDetails) d.push(`Bank Statement Details: ${payload.bankStatementDetails}`);
+    if (payload.significantTransactions) d.push(`Significant Transactions: ${payload.significantTransactions}`);
     if (payload.monthlyExpenses) d.push(`Monthly Expenses: ${payload.monthlyExpenses}`);
     if (payload.currentBankBalance) d.push(`Current Bank Balance: ${payload.currentBankBalance}`);
     if (payload.estimatedTripCost) d.push(`Estimated Trip Cost: ${payload.estimatedTripCost}`);
-    if (payload.significantTransactions) d.push(`Significant Transactions: ${payload.significantTransactions}`);
 
     if (payload.accommodation) d.push(`Accommodation: ${payload.accommodation}`);
     if (payload.documents) d.push(`Supporting Documents: ${payload.documents}`);
@@ -562,7 +506,7 @@ app.post('/generate-letter', async (req, res) => {
     if (payload.sponsorAccommodation) d.push(`Sponsor Accommodation Provided?: ${payload.sponsorAccommodation}`);
     if (payload.sponsorDocs) d.push(`Sponsor Documents: ${payload.sponsorDocs}`);
 
-    if (payload.specialEvents) d.push(`Special Events: ${payload.specialEvents}`);
+    if (payload.specialEvents) d.push(`Special Events/Extras: ${payload.specialEvents}`);
     if (payload.compellingReasons) d.push(`Compelling Reasons: ${payload.compellingReasons}`);
     if (payload.supportingLetters) d.push(`Supporting Letters/Docs: ${payload.supportingLetters}`);
     if (payload.potentialWeaknesses) d.push(`Potential Weaknesses: ${payload.potentialWeaknesses}`);
@@ -571,14 +515,7 @@ app.post('/generate-letter', async (req, res) => {
     if (payload.embassyName) d.push(`Embassy Name: ${payload.embassyName}`);
     if (payload.embassyAddress) d.push(`Embassy Address: ${payload.embassyAddress}`);
 
-    // Intent flags for smarter prompt
-    const flags = {
-      applicationType: (/reapp/i.test(String(payload.visaRefusals || '')) ? 'Reapplication' : undefined),
-      employmentStatus: undefined, // frontend already embeds a hint in bank details; optional here
-      isSponsored: (payload.sponsorSelf === 'No' ? 'Yes' : 'No'),
-    };
-
-    const messages = buildMessages(d, flags);
+    const messages = buildMessages(d, payload);
     const letter = await createLetter(messages);
     if (!letter) return res.status(502).json({ error: 'The AI returned no content.' });
 
@@ -593,7 +530,7 @@ app.post('/generate-letter', async (req, res) => {
   }
 });
 
-/* ------------------------ Start ------------------------ */
+// ------------------------ Start ------------------------
 app.listen(PORT, () => {
-  console.log(`✅ Visa Letter API listening on http://localhost:${PORT}`);
+  console.log(`✅ Visa Letter API (SOP-STRICT) listening on http://localhost:${PORT}`);
 });
