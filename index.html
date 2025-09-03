@@ -20,8 +20,8 @@
 
     <section id="form-container" class="bg-white shadow-md rounded-xl p-6 space-y-6">
       <form id="visaForm" class="space-y-6">
-        <!-- Decision flags (SOP) -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- SOP flags -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-semibold mb-1" for="applicationType">Application Type <span class="text-red-500">*</span></label>
             <select id="applicationType" class="w-full border rounded-md p-2" required>
@@ -29,7 +29,7 @@
               <option value="First-time">First-time</option>
               <option value="Reapplication">Reapplication (after refusal)</option>
             </select>
-            <p class="hint text-gray-500 mt-1">If reapplying, you’ll explain refusal reasons.</p>
+            <p class="hint text-gray-500 mt-1">If reapplying, add refusal reasons below.</p>
           </div>
           <div>
             <label class="block text-sm font-semibold mb-1" for="employmentStatus">Employment Status <span class="text-red-500">*</span></label>
@@ -41,17 +41,9 @@
               <option value="Student">Student</option>
             </select>
           </div>
-          <div>
-            <label class="block text-sm font-semibold mb-1" for="isSponsored">Sponsored? <span class="text-red-500">*</span></label>
-            <select id="isSponsored" class="w-full border rounded-md p-2" required>
-              <option value="">Select</option>
-              <option value="No">No (self-funded)</option>
-              <option value="Yes">Yes (family/company)</option>
-            </select>
-          </div>
         </div>
 
-        <!-- Refusal reasons (moved up for visibility) -->
+        <!-- Refusal reasons (top, so staff sees it early) -->
         <div id="refusalBlockTop" class="hidden">
           <label class="block text-sm font-medium mb-1" for="visaRefusalsTop">Previous Visa Refusal(s) — reasons & date</label>
           <textarea id="visaRefusalsTop" rows="2" class="w-full border rounded-md p-2" placeholder="List refusal reasons briefly and date(s)."></textarea>
@@ -133,7 +125,7 @@
                 <option>Medical</option><option>Visit</option><option>Other</option>
               </select>
             </div>
-            <!-- Visa Type: Other explain -->
+            <!-- Visa Type: Other specify -->
             <div id="visaTypeOtherWrap" class="hidden md:col-span-2">
               <label class="block text-sm font-medium mb-1" for="visaTypeOther">Please specify (Visa Type = Other)</label>
               <input id="visaTypeOther" type="text" class="w-full border rounded-md p-2" placeholder="Describe the visa type" />
@@ -167,7 +159,7 @@
               <textarea id="stayDetails" rows="2" class="w-full border rounded-md p-2" placeholder="Hotel info or host address"></textarea>
             </div>
 
-            <!-- Inviter fields (toggle off when invited = No) -->
+            <!-- Inviter fields (auto-hide when invited = No) -->
             <div id="inviterWrap" class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium mb-1" for="inviterName">Inviter's Name</label>
@@ -223,6 +215,8 @@
               <label class="block text-sm font-medium mb-1" for="estimatedTripCost">Estimated Trip Cost (₦ or £)</label>
               <input id="estimatedTripCost" type="text" class="w-full border rounded-md p-2" placeholder="₦2,000,000 or £2,000" />
             </div>
+
+            <!-- The ONLY switch: Funding Source -->
             <div>
               <label class="block text-sm font-medium mb-1" for="funding">Funding Source</label>
               <select id="funding" class="w-full border rounded-md p-2">
@@ -230,14 +224,110 @@
                 <option>Employer</option><option>Family</option><option>Sponsor</option><option>Other</option>
               </select>
             </div>
-            <!-- Funding = Other explain -->
+
+            <!-- Funding = Other -->
             <div id="fundingOtherWrap" class="hidden md:col-span-2">
-              <label class="block text-sm font-medium mb-1" for="fundingOther">Please specify (Funding Source = Other)</label>
-              <input id="fundingOther" type="text" class="w-full border rounded-md p-2" placeholder="Describe the funding arrangement" />
+              <label class="block text-sm font-medium mb-1" for="fundingOther">Please specify (Funding = Other)</label>
+              <input id="fundingOther" type="text" class="w-full border rounded-md p-2" placeholder="Describe the funding arrangement (name, relationship/company, proof)" />
+            </div>
+
+            <!-- FAMILY block -->
+            <div id="familyBlock" class="hidden md:col-span-2">
+              <h3 class="font-semibold mb-2">Family Sponsor Details</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium mb-1" for="familyName">Family Member’s Name</label>
+                  <input id="familyName" type="text" class="w-full border rounded-md p-2" />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium mb-1" for="familyRelationship">Relationship to Applicant</label>
+                  <input id="familyRelationship" type="text" class="w-full border rounded-md p-2" placeholder="e.g., Father, Sister" />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium mb-1" for="familyOccupation">Family Member’s Occupation</label>
+                  <input id="familyOccupation" type="text" class="w-full border rounded-md p-2" />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium mb-1" for="familyIncome">Family Member’s Income (₦)</label>
+                  <input id="familyIncome" type="text" class="w-full border rounded-md p-2" />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium mb-1" for="familyAccommodation">Will Family Provide Accommodation?</label>
+                  <select id="familyAccommodation" class="w-full border rounded-md p-2">
+                    <option value="">Select</option><option>Yes</option><option>No</option>
+                  </select>
+                </div>
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-medium mb-1" for="familyDocs">Family Sponsor Documents</label>
+                  <textarea id="familyDocs" rows="2" class="w-full border rounded-md p-2" placeholder="Bank statements, ID, letter of sponsorship, proof of relationship"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- EMPLOYER block -->
+            <div id="employerBlock" class="hidden md:col-span-2">
+              <h3 class="font-semibold mb-2">Employer Funding Details</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium mb-1" for="employerName2">Company Name</label>
+                  <input id="employerName2" type="text" class="w-full border rounded-md p-2" />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium mb-1" for="employerContact">Company Contact / HR</label>
+                  <input id="employerContact" type="text" class="w-full border rounded-md p-2" placeholder="Name & phone/email" />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium mb-1" for="employerCovers">What costs will the company cover?</label>
+                  <input id="employerCovers" type="text" class="w-full border rounded-md p-2" placeholder="e.g., flight, hotel, daily allowance" />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium mb-1" for="employerAccommodation">Will Employer Provide Accommodation?</label>
+                  <select id="employerAccommodation" class="w-full border rounded-md p-2">
+                    <option value="">Select</option><option>Yes</option><option>No</option>
+                  </select>
+                </div>
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-medium mb-1" for="employerDocs">Employer Documents</label>
+                  <textarea id="employerDocs" rows="2" class="w-full border rounded-md p-2" placeholder="Intro/undertaking letter, invitation, CAC/registration, bank proof"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- SPONSOR (non-family individual or organization) -->
+            <div id="sponsorBlock" class="hidden md:col-span-2">
+              <h3 class="font-semibold mb-2">Sponsor Details</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium mb-1" for="sponsorName">Sponsor’s Full Name / Organization</label>
+                  <input id="sponsorName" type="text" class="w-full border rounded-md p-2" />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium mb-1" for="sponsorRelationship">Relationship to Applicant</label>
+                  <input id="sponsorRelationship" type="text" class="w-full border rounded-md p-2" placeholder="e.g., Family friend / Church / NGO" />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium mb-1" for="sponsorOccupation">Sponsor Occupation / Nature of Business</label>
+                  <input id="sponsorOccupation" type="text" class="w-full border rounded-md p-2" />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium mb-1" for="sponsorIncome">Sponsor’s Income (₦)</label>
+                  <input id="sponsorIncome" type="text" class="w-full border rounded-md p-2" />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium mb-1" for="sponsorAccommodation">Will Sponsor Provide Accommodation?</label>
+                  <select id="sponsorAccommodation" class="w-full border rounded-md p-2">
+                    <option value="">Select</option><option>Yes</option><option>No</option>
+                  </select>
+                </div>
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-medium mb-1" for="sponsorDocs">Sponsor Documents</label>
+                  <textarea id="sponsorDocs" rows="2" class="w-full border rounded-md p-2" placeholder="Bank statements, ID/registration, letter of sponsorship, invitation"></textarea>
+                </div>
+              </div>
             </div>
 
             <div class="md:col-span-2">
-              <label class="block text-sm font-medium mb-1" for="bankStatementDetails">Bank Statement Details</label>
+              <label class="block text-sm font-medium mb-1" for="bankStatementDetails">Bank Statement Details (Applicant)</label>
               <textarea id="bankStatementDetails" rows="2" class="w-full border rounded-md p-2" placeholder="Bank name, balance trend"></textarea>
             </div>
             <div class="md:col-span-2">
@@ -290,7 +380,7 @@
           </div>
         </div>
 
-        <!-- Travel & visa history (kept for completeness; refusal moved up but we mirror into payload) -->
+        <!-- Travel & visa history -->
         <div>
           <h2 class="text-xl font-semibold">Travel & Visa History</h2>
           <div class="mt-3">
@@ -300,39 +390,6 @@
           <div class="mt-3">
             <label class="block text-sm font-medium mb-1" for="validVisas">Current Valid Visas</label>
             <textarea id="validVisas" rows="2" class="w-full border rounded-md p-2"></textarea>
-          </div>
-        </div>
-
-        <!-- Sponsor -->
-        <div id="sponsorBlock" class="hidden">
-          <h2 class="text-xl font-semibold pt-4">Sponsor Information</h2>
-          <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium mb-1" for="sponsorName">Sponsor's Name</label>
-              <input id="sponsorName" type="text" class="w-full border rounded-md p-2" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium mb-1" for="sponsorRelationship">Sponsor's Relationship</label>
-              <input id="sponsorRelationship" type="text" class="w-full border rounded-md p-2" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium mb-1" for="sponsorOccupation">Sponsor's Occupation</label>
-              <input id="sponsorOccupation" type="text" class="w-full border rounded-md p-2" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium mb-1" for="sponsorIncome">Sponsor's Income (₦)</label>
-              <input id="sponsorIncome" type="text" class="w-full border rounded-md p-2" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium mb-1" for="sponsorAccommodation">Will Sponsor Provide Accommodation?</label>
-              <select id="sponsorAccommodation" class="w-full border rounded-md p-2">
-                <option value="">Select</option><option>Yes</option><option>No</option>
-              </select>
-            </div>
-            <div class="md:col-span-2">
-              <label class="block text-sm font-medium mb-1" for="sponsorDocs">Sponsor's Documents</label>
-              <textarea id="sponsorDocs" rows="2" class="w-full border rounded-md p-2" placeholder="Bank statements, payslips, invitation letter"></textarea>
-            </div>
           </div>
         </div>
 
@@ -392,78 +449,83 @@
 
     const applicationType = document.getElementById('applicationType');
     const employmentStatus = document.getElementById('employmentStatus');
-    const isSponsored = document.getElementById('isSponsored');
-    const visaType = document.getElementById('visaType');
-    const invited = document.getElementById('invited');
 
-    const sponsorBlock = document.getElementById('sponsorBlock');
-    const refusalBlockTop = document.getElementById('refusalBlockTop');
-    const visaRefusalsTop = document.getElementById('visaRefusalsTop');
+    const visaType = document.getElementById('visaType');
+    const visaTypeOtherWrap = document.getElementById('visaTypeOtherWrap');
+    const visaTypeOther = document.getElementById('visaTypeOther');
+
+    const invited = document.getElementById('invited');
+    const inviterWrap = document.getElementById('inviterWrap');
 
     const businessBlock = document.getElementById('businessBlock');
     const medicalBlock = document.getElementById('medicalBlock');
     const businessDetails = document.getElementById('businessDetails');
     const medicalDetails = document.getElementById('medicalDetails');
 
-    const inviterWrap = document.getElementById('inviterWrap');
+    const refusalBlockTop = document.getElementById('refusalBlockTop');
+    const visaRefusalsTop = document.getElementById('visaRefusalsTop');
 
-    const visaTypeOtherWrap = document.getElementById('visaTypeOtherWrap');
-    const visaTypeOther = document.getElementById('visaTypeOther');
     const funding = document.getElementById('funding');
     const fundingOtherWrap = document.getElementById('fundingOtherWrap');
     const fundingOther = document.getElementById('fundingOther');
+
+    const familyBlock = document.getElementById('familyBlock');
+    const employerBlock = document.getElementById('employerBlock');
+    const sponsorBlock = document.getElementById('sponsorBlock');
 
     const monthlyExpenses = document.getElementById('monthlyExpenses');
     const currentBankBalance = document.getElementById('currentBankBalance');
     const estimatedTripCost = document.getElementById('estimatedTripCost');
     const financeCalc = document.getElementById('financeCalc');
 
-    // Conditional UI
+    // Toggles
     applicationType.addEventListener('change', () => {
       const reapp = applicationType.value === 'Reapplication';
       refusalBlockTop.classList.toggle('hidden', !reapp);
-    });
-
-    isSponsored.addEventListener('change', () => {
-      sponsorBlock.classList.toggle('hidden', isSponsored.value !== 'Yes');
     });
 
     visaType.addEventListener('change', () => {
       const v = visaType.value;
       businessBlock.classList.toggle('hidden', v !== 'Business');
       medicalBlock.classList.toggle('hidden', v !== 'Medical');
-      // show "Other" specify input
       visaTypeOtherWrap.classList.toggle('hidden', v !== 'Other');
     });
 
     invited.addEventListener('change', () => {
-      // hide inviter fields when "No" selected
       const show = invited.value === 'Yes';
       inviterWrap.classList.toggle('hidden', !show);
-      if (!show) {
-        // clear inviter fields to avoid sending stale values
-        ['inviterName','inviterAddress','inviterRelationship','inviterDocs']
-          .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-      }
+      if (!show) ['inviterName','inviterAddress','inviterRelationship','inviterDocs']
+        .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     });
 
     funding.addEventListener('change', () => {
-      fundingOtherWrap.classList.toggle('hidden', funding.value !== 'Other');
+      const f = funding.value;
+      familyBlock.classList.add('hidden');
+      employerBlock.classList.add('hidden');
+      sponsorBlock.classList.add('hidden');
+      fundingOtherWrap.classList.add('hidden');
+
+      if (f === 'Family') familyBlock.classList.remove('hidden');
+      else if (f === 'Employer') employerBlock.classList.remove('hidden');
+      else if (f === 'Sponsor') sponsorBlock.classList.remove('hidden');
+      else if (f === 'Other') fundingOtherWrap.classList.remove('hidden');
+
+      // clear irrelevant fields when switching
+      if (f !== 'Family') ['familyName','familyRelationship','familyOccupation','familyIncome','familyAccommodation','familyDocs']
+        .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      if (f !== 'Employer') ['employerName2','employerContact','employerCovers','employerAccommodation','employerDocs']
+        .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      if (f !== 'Sponsor') ['sponsorName','sponsorRelationship','sponsorOccupation','sponsorIncome','sponsorAccommodation','sponsorDocs']
+        .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      if (f !== 'Other') fundingOther.value = '';
     });
 
-    // Helper: parse number safely from ₦/£ strings
-    function num(x){
-      if(!x) return NaN;
-      const s = (''+x).replace(/[^0-9.\-]/g,'');
-      const n = parseFloat(s);
-      return isNaN(n) ? NaN : n;
-    }
-
-    // Live finance calculation (for SOP affordability)
+    // Finance helper
     ['income','monthlyExpenses','estimatedTripCost','currentBankBalance'].forEach(id=>{
       const el = document.getElementById(id);
       el.addEventListener('input', showFinance);
     });
+    function num(x){ if(!x) return NaN; const s=(''+x).replace(/[^0-9.\-]/g,''); const n=parseFloat(s); return isNaN(n)?NaN:n; }
     function showFinance(){
       const income = num(document.getElementById('income').value);
       const expenses = num(monthlyExpenses.value);
@@ -487,45 +549,58 @@
       `;
     }
 
-    // Collect form values
+    // helpers
     function v(id){ return document.getElementById(id)?.value?.trim() || '' }
+
     function getFormData(){
-      // Purpose-specific → fold into specialEvents for backend
+      // purpose-specific into specialEvents
       let special = v('specialEvents');
-      if(visaType.value==='Business' && businessDetails.value){
-        special += (special?'\n':'') + `Business/Conference: ${businessDetails.value}`;
+      if(visaType.value==='Business' && v('businessDetails')){
+        special += (special?'\n':'') + `Business/Conference: ${v('businessDetails')}`;
       }
-      if(visaType.value==='Medical' && medicalDetails.value){
-        special += (special?'\n':'') + `Medical: ${medicalDetails.value}`;
+      if(visaType.value==='Medical' && v('medicalDetails')){
+        special += (special?'\n':'') + `Medical: ${v('medicalDetails')}`;
       }
-      if(visaType.value==='Other' && visaTypeOther.value){
-        special += (special?'\n':'') + `Visa Type (Other): ${visaTypeOther.value}`;
+      if(visaType.value==='Other' && v('visaTypeOther')){
+        special += (special?'\n':'') + `Visa Type (Other): ${v('visaTypeOther')}`;
       }
-      if(funding.value==='Other' && fundingOther.value){
-        special += (special?'\n':'') + `Funding (Other): ${fundingOther.value}`;
+      if(funding.value==='Other' && v('fundingOther')){
+        special += (special?'\n':'') + `Funding (Other): ${v('fundingOther')}`;
       }
 
-      // Finance synthesis appended to bankStatementDetails
-      const income = v('income');
-      const exp = v('monthlyExpenses');
-      const bal = v('currentBankBalance');
-      const trip = v('estimatedTripCost');
+      // finance synthesis → bankStatementDetails
       const summaryBits = [];
-      if(income) summaryBits.push(`Monthly Income: ${income}`);
-      if(exp) summaryBits.push(`Monthly Expenses: ${exp}`);
-      if(bal) summaryBits.push(`Current Bank Balance: ${bal}`);
-      if(trip) summaryBits.push(`Estimated Trip Cost: ${trip}`);
+      if(v('income')) summaryBits.push(`Monthly Income: ${v('income')}`);
+      if(v('monthlyExpenses')) summaryBits.push(`Monthly Expenses: ${v('monthlyExpenses')}`);
+      if(v('currentBankBalance')) summaryBits.push(`Current Bank Balance: ${v('currentBankBalance')}`);
+      if(v('estimatedTripCost')) summaryBits.push(`Estimated Trip Cost: ${v('estimatedTripCost')}`);
 
       const flags = [];
       if(applicationType.value) flags.push(`Application Type: ${applicationType.value}`);
       if(employmentStatus.value) flags.push(`Employment Status: ${employmentStatus.value}`);
-      if(isSponsored.value) flags.push(`Sponsored: ${isSponsored.value}`);
+      flags.push(`Funding: ${funding.value || 'Self-funded'}`);
       if(flags.length) summaryBits.push(flags.join(' | '));
 
-      const bankDetailsExisting = v('bankStatementDetails');
-      const bankSynthesis = summaryBits.length ? `${bankDetailsExisting ? bankDetailsExisting + '\n' : ''}${summaryBits.join(' • ')}` : bankDetailsExisting;
+      const bankSynthesis = summaryBits.length
+        ? `${v('bankStatementDetails') ? v('bankStatementDetails') + '\n' : ''}${summaryBits.join(' • ')}`
+        : v('bankStatementDetails');
 
-      // Compose payload
+      // map funding blocks → backend sponsor fields
+      let sName='', sRel='', sOcc='', sInc='', sAcc='', sDocs='';
+      if(funding.value==='Family'){
+        sName=v('familyName'); sRel=v('familyRelationship'); sOcc=v('familyOccupation');
+        sInc=v('familyIncome'); sAcc=v('familyAccommodation'); sDocs=v('familyDocs');
+      }else if(funding.value==='Employer'){
+        sName=v('employerName2'); sRel=v('employerContact') || 'Employer';
+        sOcc='Company'; sInc=''; sAcc=v('employerAccommodation');
+        sDocs= ['Employer covers: '+(v('employerCovers')||'not stated'), v('employerDocs')].filter(Boolean).join(' | ');
+      }else if(funding.value==='Sponsor'){
+        sName=v('sponsorName'); sRel=v('sponsorRelationship'); sOcc=v('sponsorOccupation');
+        sInc=v('sponsorIncome'); sAcc=v('sponsorAccommodation'); sDocs=v('sponsorDocs');
+      }
+
+      const isSelfFunded = !funding.value || funding.value === '' ;
+
       return {
         // Personal
         name: v('name'),
@@ -561,9 +636,9 @@
         employerName: v('employerName'),
         employerAddress: v('employerAddress'),
         employmentDuration: v('employmentDuration'),
-        income,
+        income: v('income'),
         otherIncome: v('otherIncome'),
-        funding: v('funding'),
+        funding: funding.value, // single source of truth
         bankStatementDetails: bankSynthesis,
         significantTransactions: v('significantTransactions'),
 
@@ -582,20 +657,19 @@
 
         // History
         travelHistory: v('travelHistory'),
-        // use the top refusal textarea; if reapplying and empty, add a stub so backend knows it's a reapplication
         visaRefusals: (applicationType.value==='Reapplication'
           ? (visaRefusalsTop.value.trim() || 'Refusal stated but details not provided')
           : '' ),
         validVisas: v('validVisas'),
 
-        // Sponsor
-        sponsorSelf: (isSponsored.value==='Yes' ? 'No' : 'Yes'),
-        sponsorName: v('sponsorName'),
-        sponsorRelationship: v('sponsorRelationship'),
-        sponsorOccupation: v('sponsorOccupation'),
-        sponsorIncome: v('sponsorIncome'),
-        sponsorAccommodation: v('sponsorAccommodation'),
-        sponsorDocs: v('sponsorDocs'),
+        // Sponsor mapping
+        sponsorSelf: isSelfFunded ? 'Yes' : 'No',
+        sponsorName: sName,
+        sponsorRelationship: sRel,
+        sponsorOccupation: sOcc,
+        sponsorIncome: sInc,
+        sponsorAccommodation: sAcc,
+        sponsorDocs: sDocs,
 
         // Additional
         specialEvents: special,
@@ -616,28 +690,32 @@
       if(!data.income) missing.push('Monthly Income');
       if(!applicationType.value) missing.push('Application Type');
       if(!employmentStatus.value) missing.push('Employment Status');
-      if(!isSponsored.value) missing.push('Sponsored?');
 
       if(applicationType.value==='Reapplication' && !visaRefusalsTop.value.trim()){
         missing.push('Refusal Reasons');
       }
-      if(isSponsored.value==='Yes'){
-        if(!v('sponsorName')) missing.push('Sponsor Name');
-        if(!v('sponsorRelationship')) missing.push('Sponsor Relationship');
-      }
-      if(visaType.value==='Business' && !v('businessDetails')){
-        missing.push('Business/Conference Details');
-      }
-      if(visaType.value==='Medical' && !v('medicalDetails')){
-        missing.push('Medical Details');
-      }
-      if(visaType.value==='Other' && !visaTypeOther.value.trim()){
-        missing.push('Visa Type (Other) — specify');
-      }
+      if(visaType.value==='Business' && !v('businessDetails')) missing.push('Business/Conference Details');
+      if(visaType.value==='Medical' && !v('medicalDetails')) missing.push('Medical Details');
+      if(visaType.value==='Other' && !visaTypeOther.value.trim()) missing.push('Visa Type (Other) — specify');
+
+      // Funding-specific requirements
       if(funding.value==='Other' && !fundingOther.value.trim()){
         missing.push('Funding (Other) — specify');
       }
-      // If invited = No, ensure inviter fields are cleared (avoid accidental stale values)
+      if(funding.value==='Family'){
+        if(!v('familyName')) missing.push('Family Sponsor Name');
+        if(!v('familyRelationship')) missing.push('Family Relationship');
+      }
+      if(funding.value==='Employer'){
+        if(!v('employerName2')) missing.push('Company Name (Employer)');
+        if(!v('employerContact')) missing.push('Company Contact/HR');
+      }
+      if(funding.value==='Sponsor'){
+        if(!v('sponsorName')) missing.push('Sponsor Name');
+        if(!v('sponsorRelationship')) missing.push('Sponsor Relationship');
+      }
+
+      // invited = No → clear inviter fields
       if(invited.value === 'No'){
         ['inviterName','inviterAddress','inviterRelationship','inviterDocs']
           .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
