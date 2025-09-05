@@ -1,9 +1,9 @@
 /**
- * Visa Letter API — SOP-STRICT, Nigeria-first
- * ------------------------------------------------------------
+ * Visa Letter API — SOP-STRICT, Nigeria-first, with Approval Rationale
+ * --------------------------------------------------------------------
  * - Fails fast if required SOP assets are missing
  * - Reads /rules, /mini_templates, /samples (MANDATORY)
- * - Empathetic, scenario-aware prompt builder
+ * - Empathetic, scenario-aware prompt builder + "why approve" rationale
  * - Uses ₦ by default when staff didn’t specify a currency symbol
  * - Same external API: POST /generate-letter -> { letter }
  */
@@ -132,14 +132,7 @@ function loadSOPStrict() {
   const minis = requireAtLeastOneTxt(MINIS_DIR, 'mini templates');
   const samples = requireAtLeastOneTxt(SAMPLES_DIR, 'samples');
 
-  return {
-    masterRules,
-    structureGuide,
-    qualityChecklist,
-    masterTemplate,
-    minis,
-    samples,
-  };
+  return { masterRules, structureGuide, qualityChecklist, masterTemplate, minis, samples };
 }
 const SOP = loadSOPStrict();
 
@@ -169,13 +162,90 @@ function clean(v) {
   return s.length ? s : undefined;
 }
 
+// Parse a number from strings like "₦1,200,000", "£2,000", "2000000"
+function parseNum(x) {
+  if (!x) return NaN;
+  const n = parseFloat(String(x).replace(/[^0-9.\-]/g, ''));
+  return Number.isFinite(n) ? n : NaN;
+}
+
 // Detect “sponsored” intent reliably
 function isSponsoredPayload(b) {
   const f = (b.funding || '').toLowerCase();
-  if (f === 'sponsor' || f === 'sponsored' || f === 'sponsorship') return true;
+  if (f === 'sponsor' || f === 'sponsored' || f === 'sponsorship' || f === 'family' || f === 'employer') return true;
   if (String(b.sponsorSelf || '').toLowerCase() === 'no') return true;
   if (b.sponsorName || b.sponsorRelationship) return true;
   return false;
+}
+
+// Decide app type from explicit field, or from refusals
+function detectApplicationType(p) {
+  const t = (p.applicationType || '').toLowerCase();
+  if (t.includes('reapp')) return 'Reapplication';
+  if (p.visaRefusals) return 'Reapplication';
+  return 'First-time';
+}
+
+// Build "why approve" rationale cues from facts
+function buildRationalePoints(p, appType) {
+  const cues = [];
+
+  // Funds / affordability
+  const bal = parseNum(p.currentBankBalance);
+  const trip = parseNum(p.estimatedTripCost);
+  if (Number.isFinite(bal) && Number.isFinite(trip) && trip > 0) {
+    const margin = bal - trip;
+    if (margin >= 0) cues.push(`Funds cover the estimated trip cost with a remaining balance of about ${margin.toLocaleString()}.`);
+  } else if (Number.isFinite(bal)) {
+    cues.push(`Bank balance indicates capacity to fund the trip.`);
+  }
+
+  // Income stability
+  if (p.income) cues.push(`Stable monthly income declared: ${p.income}.`);
+
+  // Sponsor / Family / Employer
+  if (p.funding) {
+    if ((p.funding || '').toLowerCase() === 'employer') {
+      if (p.employerName || p.employerAddress) cues.push(`Employer support documented (${p.employerName || 'employer'}), including travel cost coverage where stated.`);
+    } else if ((p.funding || '').toLowerCase() === 'family') {
+      if (p.sponsorName || p.sponsorRelationship) cues.push(`Family sponsorship declared by ${p.sponsorName || 'family member'} (${p.sponsorRelationship || 'relationship stated'}), with supporting documents.`);
+    } else if ((p.funding || '').toLowerCase() === 'sponsor') {
+      if (p.sponsorName) cues.push(`Third-party sponsorship by ${p.sponsorName}${p.sponsorRelationship ? ` (${p.sponsorRelationship})` : ''}, with financial evidence provided.`);
+    }
+  }
+
+  // Accommodation / Invitation
+  if (p.stayDetails) cues.push(`Accommodation/host details provided (${p.stayDetails.slice(0, 80)}…).`);
+  if (p.invited && String(p.invited).toLowerCase() === 'yes') cues.push(`Invitation and host supporting documents attached.`);
+
+  // Ties to Nigeria
+  const ties = [];
+  if (p.propertyDetails) ties.push('property ownership');
+  if (p.businessCommitments || p.employerName) ties.push('ongoing employment/business');
+  if (p.familyDependents) ties.push('family dependents');
+  if (ties.length) cues.push(`Strong ties to Nigeria: ${ties.join(', ')}.`);
+
+  // History / Compliance
+  if (p.validVisas || p.travelHistory) cues.push(`Prior travel/visa history demonstrates compliance with immigration rules.`);
+
+  // Reapplication-specific
+  if (appType === 'Reapplication') {
+    if (p.visaRefusals) cues.push(`This submission provides new/clearer evidence addressing the refusal points.`);
+    if (p.significantTransactions) cues.push(`Large/irregular transactions are explained in context.`);
+    if (p.bankStatementDetails) cues.push(`Bank statement trend and details are clarified.`);
+    if (p.sponsorDocs) cues.push(`Sponsor documentation is included to close prior gaps.`);
+  }
+
+  // Study/Medical empathy
+  if ((p.visaType || '').toLowerCase() === 'study') {
+    cues.push('The study period is time-bound and purpose-specific, with a clear plan to return to Nigeria.');
+  }
+  if ((p.visaType || '').toLowerCase() === 'medical') {
+    cues.push('Medical timeline and funding are defined, with intention to return after treatment.');
+  }
+
+  // Trim + cap lines
+  return cues.slice(0, 8);
 }
 
 // ---------- Prompt Builder (SOP-aware, empathetic) ----------
@@ -184,7 +254,7 @@ function buildMessages(detailLines, payload) {
 
   // Extract some fields to steer structure
   const getField = (label) => {
-    const m = new RegExp('^' + label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*:\\s*(.+)$', 'mi').exec(joined);
+    const m = new RegExp('^' + label.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&') + '\\s*:\\s*(.+)$', 'mi').exec(joined);
     return m ? m[1].trim() : undefined;
   };
   const destination = getField('Destination') || getField('Destination Country') || '[Destination]';
@@ -195,28 +265,27 @@ function buildMessages(detailLines, payload) {
     /(^|\n)\s*(Visa Refusals|Previous Visa Refusals)\s*:/i.test(joined) ||
     /\brefusal(s)?\b/i.test(purpose);
 
+  const appType = detectApplicationType(payload);
   const sponsored = isSponsoredPayload(payload);
   const selfEmployed = /(^|\n)\s*Occupation:\s*(owner|self|founder|ceo|proprietor)/i.test(joined) ||
                        /(^|\n)\s*Employment Status:\s*Self-employed/i.test(joined);
 
   const isMedical = /(^|\n)\s*Medical:/i.test(joined) || /(^|\n)\s*Visa Type:\s*Medical/i.test(joined);
-  const isStudy   = /(^|\n)\s*Visa Type:\s*Study/i.test(joined);
   const isBusiness= /(^|\n)\s*Visa Type:\s*Business/i.test(joined);
   const isTourist = /(^|\n)\s*Visa Type:\s*Tourist/i.test(joined);
-  const isVisit   = /(^|\n)\s*Visa Type:\s*Visit/i.test(joined);
 
   const hasWeaknesses = /(^|\n)\s*Potential Weaknesses:\s*\S+/i.test(joined);
 
   // tone selection
   const tone =
     isMedical || hasWeaknesses ? 'Warm, empathetic and respectful, but concise and professional.' :
-    (isVisit || isTourist || isStudy) ? 'Courteous, positive, and professional.' :
+    (isTourist || /Visit/i.test(visaType) || /Study/i.test(visaType)) ? 'Courteous, positive, and professional.' :
     'Formal, direct, and professional.';
 
   // Scenario hints + minis
   const blocks = [];
   const hints = [];
-  if (refusalPresent) {
+  if (refusalPresent || appType === 'Reapplication') {
     hints.push('Reapplication after refusal: provide a brief, factual clarification to each refusal point and show new evidence.');
     const t = getMini('refusal');
     if (t) blocks.push('--- MINI (Reapplication) ---\n' + t);
@@ -247,6 +316,12 @@ function buildMessages(detailLines, payload) {
   // currency policy
   const currencyPolicy = `When formatting amounts with no symbol, default to ₦ (Naira). If a symbol or currency word is already present (e.g., £, USD), keep exactly what was provided—do not convert.`;
 
+  // Build rationale cues
+  const rationalePoints = buildRationalePoints(payload, appType);
+  const rationaleBlock = rationalePoints.length
+    ? `\n--- APPROVAL RATIONALE CUES ---\n${rationalePoints.map(x => '- ' + x).join('\n')}\n`
+    : '\n--- APPROVAL RATIONALE CUES ---\n(no explicit cues; infer from facts above)\n';
+
   const systemMessage = {
     role: 'system',
     content:
@@ -272,6 +347,10 @@ function buildMessages(detailLines, payload) {
    - If reapplication: short clarification addressing refusal
    - Supporting documents referenced (only those user mentioned)
    - Strong ties to Nigeria & clear return assurance
+   - ${appType === 'Reapplication'
+        ? 'Include a short paragraph titled "Why my application merits approval now", summarising what has changed since refusal and how new evidence addresses concerns.'
+        : 'Include a short paragraph titled "Why my application merits approval", clearly stating the strengths of the case.'}
+   (Avoid bullet lists in the final letter—write it as cohesive prose.)
 6) Closing: "Sincerely," + full name
 
 --- MASTER RULES ---
@@ -289,6 +368,7 @@ ${clip(SOP.masterTemplate, 2500)}
 --- STYLE DIGEST (sample excerpts) ---
 ${STYLE_DIGEST || '(no samples? but server would have refused to start)'}
 ${blocks.length ? '\n\n' + blocks.join('\n\n') : ''}
+${rationaleBlock}
 
 --- SCENARIO HINTS ---
 ${hints.length ? '- ' + hints.join('\n- ') : '(none)'}
@@ -345,7 +425,7 @@ async function createLetter(messages) {
 }
 
 // ------------------------ Health ------------------------
-app.get('/', (_req, res) => res.send('✅ Visa Letter API (SOP-STRICT) is running'));
+app.get('/', (_req, res) => res.send('✅ Visa Letter API (SOP-STRICT + Rationale) is running'));
 app.get('/health', (_req, res) => res.json({ ok: true, model: MODEL_NAME }));
 
 // ------------------------ Main Endpoint ------------------------
@@ -354,6 +434,9 @@ app.post('/generate-letter', async (req, res) => {
     const b = req.body || {};
 
     const payload = {
+      // Optional explicit app type (frontend may or may not send this)
+      applicationType: clean(b.applicationType),
+
       // Personal
       name: clean(b.name),
       age: clean(b.age),
@@ -437,8 +520,8 @@ app.post('/generate-letter', async (req, res) => {
 
     // Sponsor sanity: if sponsored intent but key fields missing
     if (isSponsoredPayload({ ...payload })) {
-      if (!payload.sponsorName) missing.push('sponsorName (required when funding is Sponsor)');
-      if (!payload.sponsorRelationship) missing.push('sponsorRelationship (required when funding is Sponsor)');
+      if (!payload.sponsorName) missing.push('sponsorName (required when funding involves a sponsor/family/employer)');
+      if (!payload.sponsorRelationship) missing.push('sponsorRelationship (required when funding involves a sponsor/family)');
     }
     if (missing.length) {
       return res.status(400).json({ error: `Missing required fields: ${missing.join(', ')}` });
@@ -446,6 +529,9 @@ app.post('/generate-letter', async (req, res) => {
 
     // Build detail lines for the prompt
     const d = [];
+    const appType = detectApplicationType(payload);
+    d.push(`Application Type: ${appType}`);
+
     d.push(`Full Name: ${payload.name}`);
     d.push(`Age: ${payload.age}`);
     d.push(`Nationality: ${payload.nationality}`);
@@ -532,5 +618,5 @@ app.post('/generate-letter', async (req, res) => {
 
 // ------------------------ Start ------------------------
 app.listen(PORT, () => {
-  console.log(`✅ Visa Letter API (SOP-STRICT) listening on http://localhost:${PORT}`);
+  console.log(`✅ Visa Letter API (SOP-STRICT + Rationale) listening on http://localhost:${PORT}`);
 });
